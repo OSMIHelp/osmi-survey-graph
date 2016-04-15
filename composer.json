@@ -1,0 +1,11 @@
+{
+    "license": "MIT",
+    "require-dev": {
+        "jeremykendall/debug-die": "^0.0.1"
+    },
+    "require": {
+        "vlucas/phpdotenv": "^2.2",
+        "graphaware/neo4j-php-client": "^4.0@alpha",
+        "pimple/pimple": "^3.0"
+    }
+}

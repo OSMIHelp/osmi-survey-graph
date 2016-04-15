@@ -1,0 +1,6 @@
+vendor/
+/neo4j
+neo4j-community-*/
+*.tar.gz
+.env
+*.zip
