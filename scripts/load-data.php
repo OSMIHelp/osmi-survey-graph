@@ -9,10 +9,14 @@ echo 'Creating constraints and indexes.' . PHP_EOL;
 
 $constraints = [
     ['Answer' => 'hash'],
+    ['Country' => 'name'],
     ['Group' => 'id'],
     ['Person' => 'token'],
+    ['Planet' => 'name'],
+    ['Profession' => 'name'],
     ['Question' => 'id'],
     ['Question' => 'order'],
+    ['State' => 'name'],
     ['Survey' => 'id'],
 ];
 
