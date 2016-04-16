@@ -110,7 +110,7 @@ QUESTION;
     foreach ($data['responses'] as $response) {
         $metadata = array_map(function (&$value) {
             if (strlen(trim($value)) === 0) {
-                return null;
+                return;
             }
 
             return $value;
@@ -135,7 +135,6 @@ PERSON;
         $stack->push($cql, $params);
 
         foreach ($response['answers'] as $questionId => $answer) {
-
             if (strlen(trim($answer)) === 0) {
                 continue;
             }
