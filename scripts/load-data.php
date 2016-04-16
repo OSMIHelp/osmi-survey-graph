@@ -73,7 +73,7 @@ foreach ($decoded as $data) {
             $cql = <<<GROUP
 MERGE (g:Group { id: { id }})
 ON CREATE SET
-    g.question = { question },
+    g.description = { question },
     g.field_id = { field_id }
 GROUP;
             $stack->push($cql, $question);
