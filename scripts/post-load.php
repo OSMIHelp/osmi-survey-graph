@@ -2,6 +2,8 @@
 
 require_once realpath('./scripts/bootstrap.php');
 
+use GraphAware\Neo4j\Client\Exception\Neo4jException;
+
 $cql = <<<DUPE_QUESTIONS
 MATCH (q:Question)
 WITH q.field_id as field_id, COUNT(q.field_id) AS dupes
