@@ -78,3 +78,94 @@ $neo4j->run(sprintf(
     $label,
     $property
 ));
+
+$stack = $neo4j->stack();
+
+echo 'Creating country nodes from responses.' . PHP_EOL;
+$cql = <<<COUNTRIES
+MATCH (q:Question)-[:HAS_ANSWER]->(a)
+WHERE q.question CONTAINS('What country do you')
+WITH COLLECT(DISTINCT a.answer) AS countries
+UNWIND countries AS country
+MERGE (c:Country { name: country })
+WITH c
+MERGE (p:Planet { name: 'Earth' })
+MERGE (p)-[:CHILD]->(c);
+COUNTRIES;
+
+$stack->push($cql);
+
+echo 'Creating US state nodes from responses.' . PHP_EOL;
+$cql = <<<STATES
+MATCH (q:Question)-[:HAS_ANSWER]->(a)
+WHERE q.question CONTAINS('What US state or territory')
+WITH COLLECT(DISTINCT a.answer) AS states
+UNWIND states AS state
+MERGE (s:State { name: state })
+WITH s
+MATCH (c:Country { name: 'United States of America' })
+MERGE (c)-[:CHILD]->(s);
+STATES;
+
+$stack->push($cql);
+
+echo 'Match respondents to countries of residence, excepting the US.' . PHP_EOL;
+$cql = <<<LIVES_IN_COUNTRY
+MATCH (q:Question)-[:HAS_ANSWER]->(a)<-[:ANSWERED]-(p)
+WHERE q.question CONTAINS('What country do you live in')
+AND NOT a.answer = "United States of America"
+WITH a.answer AS countryName, COLLECT(p) AS residents
+MATCH (c:Country { name: countryName })
+WITH c, residents
+UNWIND residents AS resident
+MERGE (resident)-[:LIVES_IN]->(c);
+LIVES_IN_COUNTRY;
+
+$stack->push($cql);
+
+echo 'Match respondents to countries they work in, excepting the US.' . PHP_EOL;
+$cql = <<<WORKS_IN_COUNTRY
+MATCH (q:Question)-[:HAS_ANSWER]->(a)<-[:ANSWERED]-(p)
+WHERE q.question CONTAINS('What country do you work in')
+AND NOT a.answer = "United States of America"
+WITH a.answer AS countryName, COLLECT(p) AS residents
+MATCH (c:Country { name: countryName })
+WITH c, residents
+UNWIND residents AS resident
+MERGE (resident)-[:WORKS_IN]->(c);
+WORKS_IN_COUNTRY;
+
+$stack->push($cql);
+
+// What state do you live in?
+$cql = "MATCH (q:Question)-[:HAS_ANSWER]->(a)<-[:ANSWERED]-(p)
+WHERE q.question CONTAINS('state or territory do you live in')
+WITH a.answer AS stateName, COLLECT(p) AS residents
+MATCH (s:State { name: stateName })
+WITH s, residents
+UNWIND residents AS resident
+MERGE (resident)-[:LIVES_IN]->(s)";
+
+$stack->push($cql);
+
+// What state do you work in?
+$cql = "MATCH (q:Question)-[:HAS_ANSWER]->(a)<-[:ANSWERED]-(p)
+WHERE q.question CONTAINS('state or territory do you work in')
+WITH a.answer AS stateName, COLLECT(p) AS residents
+MATCH (s:State { name: stateName })
+WITH s, residents
+UNWIND residents AS resident
+MERGE (resident)-[:WORKS_IN]->(s)";
+
+$stack->push($cql);
+
+// What do you do?
+$cql = "MATCH (q:Question { question: 'Which of the following best describes your work position?' })-[:HAS_ANSWER]->(a)<-[:ANSWERED]-(p)
+WITH a.answer AS professionName, COLLECT(p) AS respondents
+MERGE (profession:Profession { name: professionName })
+WITH profession, respondents
+UNWIND respondents AS respondent
+MERGE (respondent)-[:WORKS_AS]->(profession)";
+
+$stack->push($cql);
+$neo4j->runStack($stack);
