@@ -60,7 +60,17 @@ echo 'Updating schema.' . PHP_EOL;
 $label = 'Question';
 $property = 'field_id';
 
-$neo4j->run(sprintf('DROP INDEX ON :%s(%s)', $label, $property));
+try {
+    $neo4j->run(sprintf('DROP INDEX ON :%s(%s)', $label, $property));
+} catch (Neo4jException $e) {
+    if (strpos($e->getMessage(), 'Index belongs to constraint') === false) {
+        throw $e;
+    }
+
+    // If the index already belongs to a constraint, then this has been run
+    // already and does not need to be run again. Ignore exception.
+}
+
 $neo4j->run(sprintf(
     'CREATE CONSTRAINT ON (n:%s) ASSERT n.%s IS UNIQUE',
     $label,
