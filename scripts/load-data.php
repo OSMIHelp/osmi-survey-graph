@@ -108,10 +108,6 @@ QUESTION;
     $respondents = [];
 
     foreach ($data['responses'] as $response) {
-        $person = [
-            'token' => $response['token'],
-        ];
-
         $metadata = array_map(function (&$value) {
             if (strlen(trim($value)) === 0) {
                 return null;
@@ -129,21 +125,14 @@ QUESTION;
             $metadata['date_submit'] = (int) strtotime($metadata['date_submit']) * 1000;
         }
 
-        $person = array_merge($person, $response['metadata']);
+        $params = ['token' => $response['token'], 'props' => $metadata];
 
         $cql = <<<PERSON
 MERGE (p:Person { token: { token }})
-ON CREATE SET
-    p.browser = { browser },
-    p.platform = { platform },
-    p.date_land = { date_land },
-    p.date_submit = { date_submit },
-    p.user_agent = { user_agent },
-    p.referer = { referer },
-    p.network_id = { network_id };
+ON CREATE SET p += { props }
 PERSON;
 
-        $stack->push($cql, $person);
+        $stack->push($cql, $params);
 
         foreach ($response['answers'] as $questionId => $answer) {
 
