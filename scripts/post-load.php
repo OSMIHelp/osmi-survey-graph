@@ -39,7 +39,7 @@ MATCH (q:Question)
 WITH q
 ORDER BY q.order
 WITH COLLECT(q) AS questions
-UNWIND RANGE(0,LENGTH(questions) - 2) as idx 
+UNWIND RANGE(0,LENGTH(questions) - 2) as idx
 WITH questions[idx] AS q1, questions[idx+1] AS q2
 MERGE (q1)-[:QUESTION]->(q2)
 QUESTION_LIST;
