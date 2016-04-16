@@ -43,7 +43,7 @@ $neo4j->runStack($stack);
 echo 'Created constraints and indexes.' . PHP_EOL;
 
 // Get json_decode()-ed OSMI data from filesystem
-$paths = glob(APPLICATION_PATH . '/data-json/*.json');
+$paths = glob(APPLICATION_PATH . '/data/*.json');
 $decoded = array_map(function ($path) {
     return json_decode(file_get_contents($path), true);
 }, $paths);
