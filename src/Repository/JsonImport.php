@@ -1,7 +1,15 @@
 <?php
 
+/**
+ * OSMI Survey Graph project.
+ *
+ * @link https://github.com/OSMIHelp/osmi-survey-graph
+ */
 namespace OSMI\Survey\Graph\Repository;
 
+/**
+ * Responsible for importing JSON-sourced (API result format) data into Neo4j.
+ */
 class JsonImport extends Neo4j
 {
     public function import(array $data)
