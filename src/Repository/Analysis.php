@@ -75,7 +75,7 @@ CQL;
         return $this->buildResponses($result);
     }
 
-    public function buildSingleResponse(Result $result)
+    private function buildSingleResponse(Result $result)
     {
         $responses = $this->buildResponses($result);
 
@@ -86,7 +86,7 @@ CQL;
         return $responses[0];
     }
 
-    public function buildResponses(Result $result)
+    private function buildResponses(Result $result)
     {
         $responses = [];
 
