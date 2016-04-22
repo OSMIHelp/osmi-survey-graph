@@ -8,6 +8,7 @@
 namespace OSMI\Survey\Graph\DependencyInjection;
 
 use GraphAware\Neo4j\Client\ClientBuilder;
+use OSMI\Survey\Graph\Repository\Analysis;
 use OSMI\Survey\Graph\Repository\ExtractData;
 use OSMI\Survey\Graph\Repository\JsonImport;
 use Pimple\Container;
@@ -37,6 +38,10 @@ class OsmiSurveyGraphProvider implements ServiceProviderInterface
 
         $pimple['extractDataRepository'] = function ($c) {
             return new ExtractData($c['neo4j']);
+        };
+
+        $pimple['analysisRepository'] = function ($c) {
+            return new Analysis($c['neo4j']);
         };
     }
 }
