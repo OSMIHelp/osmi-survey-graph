@@ -10,10 +10,11 @@ namespace OSMI\Survey\Graph;
 /**
  * ValueObject containing a single Survey response.
  */
-final class Response
+final class Response implements \JsonSerializable
 {
     private $question;
     private $answers = [];
+    private $totalAnswers;
 
     /**
      * Public constructor.
@@ -26,6 +27,7 @@ final class Response
         $this->question = $question;
         $this->answers = $answers;
         $this->sortAnswers();
+        $this->totalAnswers = $this->sumAnswers();
     }
 
     /**
@@ -49,13 +51,23 @@ final class Response
     }
 
     /**
-     * Get total of all answers.
+     * Gets total number of answers.
+     *
+     * @return int
+     */
+    public function getTotalAnswers()
+    {
+        return $this->totalAnswers;
+    }
+
+    /**
+     * Gets sum of all answers.
      *
      * Useful for calculating percentage of total answers.
      *
      * @return int
      */
-    public function totalAnswers()
+    public function sumAnswers()
     {
         return (int) array_reduce($this->answers, function ($carry, $answer) {
             $carry += $answer['responses'];
@@ -76,5 +88,17 @@ final class Response
 
             return ($a['responses'] > $b['responses']) ? -1 : 1;
         });
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function jsonSerialize()
+    {
+        return [
+            'question' => $this->getQuestion(),
+            'answers' => $this->getAnswers(),
+            'totalAnswers' => $this->getTotalAnswers(),
+        ];
     }
 }
