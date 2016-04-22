@@ -7,6 +7,7 @@ echo 'Creating constraints and indexes.' . PHP_EOL;
 $constraints = [
     ['Answer' => 'hash'],
     ['Country' => 'name'],
+    ['Disorder' => 'name'],
     ['Group' => 'id'],
     ['Person' => 'token'],
     ['Planet' => 'name'],
@@ -35,6 +36,7 @@ try {
     $indexes = [
         ['Question' => 'field_id'],
         ['Question' => 'group'],
+        ['Question' => 'question'],
     ];
 
     foreach ($indexes as $index) {
@@ -48,9 +50,12 @@ try {
 
     echo 'Created constraints and indexes.' . PHP_EOL;
 } catch (\Exception $e) {
+    echo 'Exception creating constraints and indexes.' . PHP_EOL;
     echo $e->getMessage() . PHP_EOL;
     exit(1);
 }
+
+$importRepo = $container['jsonImportRepository'];
 
 try {
     $paths = glob(APPLICATION_PATH . '/data/*.json');
@@ -63,12 +68,25 @@ try {
 
     foreach ($decoded as $data) {
         echo sprintf("Importing data from '%s'.", $paths[$index])  . PHP_EOL;
-        $container['jsonImportRepository']->import($data);
+        $importRepo->import($data);
         $index++;
     }
+
+    echo 'Finished importing data.' . PHP_EOL;
 } catch (\Exception $e) {
+    echo 'Exception importing data.' . PHP_EOL;
     echo $e->getMessage() . PHP_EOL;
     exit(1);
 }
 
-echo 'Finished!' . PHP_EOL;
+$extractDataRepo = $container['extractDataRepository'];
+
+try {
+    $extractDataRepo->extractData();
+
+    echo 'Finished extracting data.' . PHP_EOL;
+} catch (\Exception $e) {
+    echo 'Exception extracting survey data.' . PHP_EOL;
+    echo $e->getMessage() . PHP_EOL;
+    exit(1);
+}
