@@ -1,11 +1,29 @@
 {
-    "license": "MIT",
-    "require-dev": {
-        "jeremykendall/debug-die": "^0.0.1"
+    "name": "osmihelp/osmi-survey-graph",
+    "description": "Authorization and authentication for the Slim Framework using ZF2 Authentication and Acl components",
+    "homepage": "https://github.com/OSMIHelp/osmi-survey-graph",
+    "support": {
+        "issues": "https://github.com/OSMIHelp/osmi-survey-graph/issues",
+        "source": "https://github.com/OSMIHelp/osmi-survey-graph"
     },
+    "license": "MIT",
+    "keywords": [
+        "osmi",
+        "neo4j",
+        "graph database",
+        "open sourcing mental illness"
+    ],
     "require": {
         "vlucas/phpdotenv": "^2.2",
         "graphaware/neo4j-php-client": "^4.0@alpha",
         "pimple/pimple": "^3.0"
+    },
+    "require-dev": {
+        "jeremykendall/debug-die": "^0.0.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "OSMI\\Survey\\Graph\\": "src/"
+        }
     }
 }

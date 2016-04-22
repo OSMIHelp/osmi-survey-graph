@@ -20,4 +20,5 @@ error_reporting(getenv('PHP_ERROR_REPORTING'));
 ini_set('display_errors', getenv('PHP_DISPLAY_ERRORS'));
 ini_set('display_startup_errors', getenv('PHP_DISPLAY_STARTUP_ERRORS'));
 
-require_once APPLICATION_PATH . '/container.php';
+$container = new \Pimple\Container();
+$container->register(new \OSMI\Survey\Graph\DependencyInjection\OsmiSurveyGraphProvider());
