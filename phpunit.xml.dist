@@ -3,7 +3,7 @@
     backupGlobals="false"
     backupStaticAttributes="false"
     bootstrap="vendor/autoload.php" 
-    checkForUnintentionallyCoveredCode="true"
+    beStrictAboutCoversAnnotation="true"
     colors="true">
 
     <testsuite name="osmi-survey-graph">
