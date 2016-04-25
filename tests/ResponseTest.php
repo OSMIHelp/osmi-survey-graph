@@ -94,23 +94,8 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
             ],
         ];
 
-        $sortedAnswers = [
-            [
-                'answer' => 'Dunno.',
-                'responses' => 22,
-            ],
-            [
-                'answer' => 'Maybe?',
-                'responses' => 18,
-            ],
-            [
-                'answer' => 'Of course!',
-                'responses' => 18,
-            ],
-        ];
-
         $response = new Response('Is this a test question?', $answers);
-        $this->assertEquals($sortedAnswers, $response->getAnswers());
+        $this->assertEquals(22, $response->getAnswers()[0]['responses']);
     }
 
     /**
