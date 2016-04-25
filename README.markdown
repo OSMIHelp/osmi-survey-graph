@@ -9,9 +9,9 @@
 
 Single response
 ```
-MATCH (q:Question { id: "list_18065482_choice" })-[:HAS_ANSWER]->(a)<-[:ANSWERED]-(p)
-RETURN a.answer AS answer, COUNT(*) AS responses
-ORDER BY responses DESC;
+MATCH (q:Question { id: { questionId }})-[:HAS_ANSWER]->(a)<-[:ANSWERED]-()
+WITH q, a, COUNT(*) AS responses
+RETURN q.question AS question, COLLECT({ answer: a.answer , responses: responses }) AS answers;
 ```
 
 Paged responses
