@@ -67,7 +67,7 @@ final class Response implements \JsonSerializable
      *
      * @return int
      */
-    public function sumAnswers()
+    private function sumAnswers()
     {
         return (int) array_reduce($this->answers, function ($carry, $answer) {
             $carry += $answer['responses'];
