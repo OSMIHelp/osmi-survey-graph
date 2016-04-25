@@ -50,7 +50,7 @@ class ExtractData extends Neo4j
      */
     public function getCreateSurvey()
     {
-        return 'MERGE (s:Survey { id: 1 }) SET s.year = 2016';
+        return 'MERGE (s:Survey { year: 2016 })';
     }
 
     /**
@@ -115,7 +115,7 @@ CQL;
     public function getCreateSurveyLinkedList()
     {
         return <<<CQL
-MATCH (s:Survey { id: 1 })
+MATCH (s:Survey { year: 2016 })
 MATCH (first:Question)
 WHERE NOT (first)<-[:QUESTION]-()
 MATCH (last:Question)
