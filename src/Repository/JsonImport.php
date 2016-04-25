@@ -12,16 +12,23 @@ namespace OSMI\Survey\Graph\Repository;
  */
 class JsonImport extends Neo4j
 {
+    private $stack;
+
     public function import(array $data)
     {
+        $this->stack = $this->client->stack();
         $this->processQuestions($data['questions']);
         $this->processResponses($data['responses']);
+        $this->client->runStack($this->stack);
+        $this->stack = null;
     }
 
     private function processQuestions(array $questions)
     {
-        $stack = $this->client->stack();
         $order = 0;
+
+        $groupParams = [];
+        $questionParams = [];
 
         foreach ($questions as $question) {
             // Skip statements
@@ -33,7 +40,7 @@ class JsonImport extends Neo4j
 
             // Groups are their own nodes
             if (strpos($question['id'], 'group') !== false) {
-                $stack->push($this->getCreateGroup(), $question);
+                $groupParams[] = $question;
                 continue;
             }
 
@@ -42,21 +49,23 @@ class JsonImport extends Neo4j
             }
 
             $question['order'] = $order;
-            $stack->push($this->getCreateQuestion(), $question);
+            $questionParams[] = $question;
             $order++;
         }
 
-        $this->client->runStack($stack);
+        $this->stack->push($this->getCreateGroup(), ['params' => $groupParams]);
+        $this->stack->push($this->getCreateQuestion(), ['params' => $questionParams]);
     }
 
     private function processResponses(array $responses)
     {
-        foreach ($responses as $response) {
-            $stack = $this->client->stack();
+        $answerParams = [];
+        $personParams = [];
 
+        foreach ($responses as $response) {
             $metadata = $this->processMetadata($response['metadata']);
             $params = ['token' => $response['token'], 'props' => $metadata];
-            $stack->push($this->getCreatePerson(), $params);
+            $personParams[] = $params;
 
             foreach ($response['answers'] as $questionId => $answer) {
                 if (strlen(trim($answer)) === 0) {
@@ -72,12 +81,12 @@ class JsonImport extends Neo4j
                     'token' => $response['token'],
                 ];
 
-                $stack->push($this->getCreateAnswer(), $params);
+                $answerParams[] = $params;
             }
-
-            $this->client->runStack($stack);
-            $stack = null;
         }
+
+        $this->stack->push($this->getCreatePerson(), ['params' => $personParams]);
+        $this->stack->push($this->getCreateAnswer(), ['params' => $answerParams]);
     }
 
     private function processMetadata(array $metadata)
@@ -106,24 +115,28 @@ class JsonImport extends Neo4j
     public function getCreateGroup()
     {
         return <<<CQL
-MERGE (g:Group { id: { id }})
+WITH { params } AS params
+UNWIND params AS group
+MERGE (g:Group { id: group.id })
 ON CREATE SET
-    g.description = { question },
-    g.field_id = { field_id }
+    g.description = group.question,
+    g.field_id = group.field_id
 CQL;
     }
 
     public function getCreateQuestion()
     {
         return <<<CQL
-MERGE (q:Question { id: { id }})
+WITH { params } AS params
+UNWIND params AS question
+MERGE (q:Question { id: question.id })
 ON CREATE SET
-    q.question = { question },
-    q.field_id = { field_id },
-    q.group = { group },
-    q.order = { order }
+    q.question = question.question,
+    q.field_id = question.field_id,
+    q.group = question.group,
+    q.order = question.order
 WITH q
-MATCH (g:Group { id: { group }})
+MATCH (g:Group { id: q.group })
 MERGE (g)-[:CONTAINS]->(q);
 CQL;
     }
@@ -131,11 +144,13 @@ CQL;
     public function getCreateAnswer()
     {
         return <<<CQL
-MERGE (a:Answer { hash: { hash }})
-ON CREATE SET a.answer = { answer }
-WITH a
-MATCH (q:Question { id: { questionId }})
-MATCH (p:Person { token: { token }})
+WITH { params } AS params
+UNWIND params AS answer
+MERGE (a:Answer { hash: answer.hash })
+ON CREATE SET a.answer = answer.answer
+WITH DISTINCT answer, a
+MATCH (q:Question { id: answer.questionId })
+MATCH (p:Person { token: answer.token })
 MERGE (q)-[:HAS_ANSWER]->(a)
 MERGE (p)-[:ANSWERED]->(a)
 CQL;
@@ -144,8 +159,10 @@ CQL;
     public function getCreatePerson()
     {
         return <<<CQL
-MERGE (p:Person { token: { token }})
-ON CREATE SET p += { props }
+WITH { params } AS params
+UNWIND params AS person
+MERGE (p:Person { token: person.token })
+ON CREATE SET p += person.props
 CQL;
     }
 }
