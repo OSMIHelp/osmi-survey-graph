@@ -50,8 +50,7 @@ class JsonImportTest extends \PHPUnit_Framework_TestCase
      * @covers OSMI\Survey\Graph\Repository\JsonImport::getCreateQuestion
      * @covers OSMI\Survey\Graph\Repository\JsonImport::getCreatePerson
      * @covers OSMI\Survey\Graph\Repository\JsonImport::getCreateAnswer
-     *
-     * @uses OSMI\Survey\Graph\Repository\JsonImport::__construct
+     * @covers OSMI\Survey\Graph\Repository\Neo4j::__construct
      *
      * @todo   Implement testImport().
      */
