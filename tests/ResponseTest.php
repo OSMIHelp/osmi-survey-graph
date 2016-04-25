@@ -50,6 +50,10 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @covers OSMI\Survey\Graph\Response::getQuestion
+     * @covers OSMI\Survey\Graph\Response::sortAnswers
+     * @covers OSMI\Survey\Graph\Response::sumAnswers
+     *
+     * @uses OSMI\Survey\Graph\Response::__construct
      */
     public function testGetQuestion()
     {
@@ -58,6 +62,10 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @covers OSMI\Survey\Graph\Response::getAnswers
+     * @covers OSMI\Survey\Graph\Response::sortAnswers
+     * @covers OSMI\Survey\Graph\Response::sumAnswers
+     *
+     * @uses OSMI\Survey\Graph\Response::__construct
      */
     public function testGetAnswers()
     {
@@ -66,7 +74,10 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @covers OSMI\Survey\Graph\Response::getTotalAnswers
-     * @covers OSMI\Survey\Graph\Response::sumAnswers
+     *
+     * @uses OSMI\Survey\Graph\Response::sortAnswers
+     * @uses OSMI\Survey\Graph\Response::sumAnswers
+     * @uses OSMI\Survey\Graph\Response::__construct
      */
     public function testGetTotalAnswers()
     {
@@ -74,8 +85,11 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @covers OSMI\Survey\Graph\Response::__construct
      * @covers OSMI\Survey\Graph\Response::sortAnswers
+     *
+     * @uses OSMI\Survey\Graph\Response::getAnswers
+     * @uses OSMI\Survey\Graph\Response::sumAnswers
+     * @uses OSMI\Survey\Graph\Response::__construct
      */
     public function testAnswersAreSortedByResponsesDesc()
     {
@@ -100,6 +114,13 @@ class ResponseTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @covers OSMI\Survey\Graph\Response::jsonSerialize
+     * @covers OSMI\Survey\Graph\Response::getQuestion
+     * @covers OSMI\Survey\Graph\Response::getAnswers
+     * @covers OSMI\Survey\Graph\Response::getTotalAnswers
+     *
+     * @uses OSMI\Survey\Graph\Response::sortAnswers
+     * @uses OSMI\Survey\Graph\Response::sumAnswers
+     * @uses OSMI\Survey\Graph\Response::__construct
      */
     public function testJsonSerialize()
     {
