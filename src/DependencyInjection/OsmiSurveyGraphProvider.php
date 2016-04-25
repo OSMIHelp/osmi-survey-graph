@@ -29,6 +29,7 @@ class OsmiSurveyGraphProvider implements ServiceProviderInterface
         $pimple['neo4j'] = function ($c) {
             return ClientBuilder::create()
                 ->addConnection('default', getenv('GRAPH_URL'))
+                ->setDefaultTimeout(10)
                 ->build();
         };
 
