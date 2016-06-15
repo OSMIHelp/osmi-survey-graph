@@ -4,3 +4,4 @@ neo4j-community-*/
 *.tar.gz
 .env
 *.zip
+.idea/
