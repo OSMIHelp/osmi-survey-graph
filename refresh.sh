@@ -2,5 +2,5 @@
 
 # Assumes theres a Neo4j instance running in this directory
 ./neo4j/bin/neo4j stop
-rm -rf ./neo4j/data/graph.db/*
+rm -rf ./neo4j/data/databases/graph.db/*
 ./neo4j/bin/neo4j start

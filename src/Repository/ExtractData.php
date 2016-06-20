@@ -180,7 +180,7 @@ WITH a, COLLECT(p) AS residents
 MATCH (c:Country { name: a.answer })
 WITH c, residents
 UNWIND residents AS resident
-CREATE UNIQUE (resident)-[:LIVES_IN]->(c);
+CREATE UNIQUE (resident)-[:LIVES_IN_COUNTRY]->(c);
 CQL;
     }
 
@@ -220,9 +220,11 @@ WITH a
 MATCH (a)<-[:ANSWERED]-(p)
 WITH a, COLLECT(p) AS residents
 MATCH (s:State { name: a.answer })
-WITH s, residents
+MATCH (c:Country { name: 'United States of America' })
+WITH c, s, residents
 UNWIND residents AS resident
-CREATE UNIQUE (resident)-[:LIVES_IN]->(s)
+CREATE UNIQUE (resident)-[:LIVES_IN_STATE]->(s)
+CREATE UNIQUE (resident)-[:LIVES_IN_COUNTRY]->(c)
 CQL;
     }
 
