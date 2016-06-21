@@ -32,3 +32,44 @@ MATCH (works)<-[:WORKS_IN]-(person:Person)-[:LIVES_IN]->(lives)
 WHERE works <> lives
 RETURN person, works, lives;
 ```
+
+
+## More example queries
+
+```
+// List of questions
+MATCH (q:Question)
+RETURN q ORDER BY q.order ASC
+
+// A single question: "Have you ever sought treatment for a mental health issue from a mental health professional?"
+MATCH (q:Question {field_id: 18068717})
+RETURN q
+
+// Question and all answers
+MATCH (q:Question {field_id: 18068717})-[:HAS_ANSWER]->(a:Answer)
+RETURN q, a
+
+// Persons who have answered
+MATCH (q:Question {field_id: 18068717})-[:HAS_ANSWER]->(a:Answer)<-[:ANSWERED]-(p:Person)
+RETURN a, p
+
+// Answer counts
+MATCH (q:Question {field_id: 18068717})-[:HAS_ANSWER]->(a:Answer)<-[:ANSWERED]-(p:Person)
+RETURN a, COUNT(p)
+
+
+// Answer counts broken out by country
+MATCH (q:Question {field_id: 18068717})-[:HAS_ANSWER]->(a:Answer)<-[:ANSWERED]-(p:Person)-[:LIVES_IN_COUNTRY]->(c:Country)
+RETURN q.question, a.answer, c.name, count(p) as count_country_answer
+ORDER BY c.name
+
+// Answer counts with percentages
+MATCH (q:Question {field_id: 18068717})
+WITH q
+MATCH (q)-[:HAS_ANSWER]->()<-[ra:ANSWERED]-(p)-[:LIVES_IN_COUNTRY]-(c:Country)
+WITH q, c, count(ra) as country_count
+MATCH (q)-[:HAS_ANSWER]->(a:Answer)<-[:ANSWERED]-(p:Person)-[:LIVES_IN_COUNTRY]-(c)
+WITH q, a, c, count(p) as answer_count, country_count
+RETURN q, a.answer, c.name, answer_count, country_count, toString(((toFloat(answer_count) / toFloat(country_count))*100)) as perc
+ORDER BY c.name ASC
+```
