@@ -5,6 +5,13 @@
 * Run `php -f scripts/load-data.php`
 * Enjoy!
 
+## Grabbing data from Typeform
+
+Example using `httpie`. **We should write a script to do this.**
+```
+http GET https://api.typeform.com/v1/form/Ao6BTw key==<TYPEFORM_API_KEY> completed==true offset==0 > ~/osmi-survey-2016_0000.json
+```
+
 ## Queries
 
 Single response
