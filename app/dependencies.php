@@ -10,8 +10,10 @@ use OSMI\Survey\Graph\Repository\JsonImport;
 $container = new \Slim\Container($settings);
 
 $container['neo4j'] = function ($c) {
+    $settings = $c->get('settings')['neo4j'];
+
     return ClientBuilder::create()
-        ->addConnection('default', getenv('GRAPH_URL'))
+        ->addConnection('default', $settings['graphUrl'])
         ->build();
 };
 
