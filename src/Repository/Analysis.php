@@ -8,8 +8,8 @@
 namespace OSMI\Survey\Graph\Repository;
 
 use GraphAware\Bolt\Result\Result;
-use OSMI\Survey\Graph\Response;
 use OSMI\Survey\Graph\Model\Question;
+use OSMI\Survey\Graph\Response;
 
 /**
  * Performs OSMI survey data analysis.
@@ -77,7 +77,7 @@ CQL;
     }
 
     /**
-     * How many questions are in the survey
+     * How many questions are in the survey.
      *
      * @return int
      */
