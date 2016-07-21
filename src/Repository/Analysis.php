@@ -7,14 +7,87 @@
  */
 namespace OSMI\Survey\Graph\Repository;
 
-use GraphAware\Neo4j\Client\Formatter\Result;
+use GraphAware\Bolt\Result\Result;
 use OSMI\Survey\Graph\Response;
+use OSMI\Survey\Graph\Model\Question;
 
 /**
  * Performs OSMI survey data analysis.
  */
 class Analysis extends Neo4j
 {
+    /**
+     * Finds single Question.
+     *
+     * @return Question
+     */
+    public function findQuestion($id)
+    {
+        $cql = <<<CQL
+MATCH (q:Question { id: { id }})
+RETURN q
+CQL;
+
+        $params = [
+            'id' => $id,
+        ];
+
+        $result = $this->client->run($cql, $params)
+            ->getRecord()
+            ->get('q')
+            ->values();
+
+        return new Question($result);
+    }
+
+    /**
+     * Find all Questions.
+     *
+     * @return Question[]
+     */
+    public function findAllQuestions($skip = 0, $limit = 0)
+    {
+        $questions = [];
+
+        $cql = <<<CQL
+MATCH (q:Question)
+RETURN q
+ORDER BY q.order
+CQL;
+
+        $params = [];
+
+        if ($skip > 0) {
+            $cql .= ' SKIP { skip }';
+            $params['skip'] = $skip;
+        }
+
+        if ($limit > 0) {
+            $cql .= ' LIMIT { limit }';
+            $params['limit'] = $limit;
+        }
+
+        $result = $this->client->run($cql, $params);
+
+        foreach ($result->records() as $record) {
+            $questions[] = new Question($record->get('q')->values());
+        }
+
+        return $questions;
+    }
+
+    /**
+     * How many questions are in the survey
+     *
+     * @return int
+     */
+    public function countQuestions()
+    {
+        $result = $this->client->run('MATCH (n:Question) RETURN COUNT(n) AS questions;');
+
+        return (int) $result->getRecord()->get('questions');
+    }
+
     /**
      * How many people responded to the survey?
      *
