@@ -40,14 +40,13 @@ $container['logger'] = function ($c) {
     return $logger;
 };
 
-// TODO: Add logging
 $container['errorHandler'] = function ($c) {
     return function ($request, $response, $exception) use ($c) {
-        $c->logger->error('Boom.', [
+        $c->logger->critical('Unexpected exception causing HTTP 500.', [
             'exception' => $exception,
         ]);
 
-        $error = new VndErrorRepresentation($exception->getMessage());
+        $error = new VndErrorRepresentation('API BROKEN. SUPPORT NOTIFIED.');
         $json = $c['hateoas']->serialize($error, 'json');
 
         return $c['response']
