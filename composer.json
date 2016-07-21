@@ -14,8 +14,13 @@
         "open sourcing mental illness"
     ],
     "require": {
-        "vlucas/phpdotenv": "^2.2",
-        "graphaware/neo4j-php-client": "^4.0@alpha",
+        "slim/slim": "^3.4",
+        "willdurand/hateoas": "^2.10",
+        "willdurand/negotiation": "^2.0",
+        "ramsey/uuid": "^3.4",
+        "vlucas/phpdotenv": "^2.3",
+        "monolog/monolog": "^1.20",
+        "graphaware/neo4j-php-client": "^4.5",
         "pimple/pimple": "^3.0"
     },
     "require-dev": {
