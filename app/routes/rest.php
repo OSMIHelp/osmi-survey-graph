@@ -17,14 +17,12 @@ $app->get('/questions', function (Request $request, Response $response, array $a
 
     $totalPages = (int) ceil($totalQuestions / $limit);
 
-    $collection = new CollectionRepresentation(
-        $questions,
-        'questions', // embedded rel
-        'questions'  // xml element name
-    );
-
     $paginated = new PaginatedRepresentation(
-        $collection,
+        new CollectionRepresentation(
+            $questions,
+            'questions', // embedded rel
+            'questions'  // xml element name
+        ),
         $route = 'questions_get_all',
         $parameters = [],
         $pageNumber,
