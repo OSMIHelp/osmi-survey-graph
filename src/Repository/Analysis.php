@@ -8,6 +8,7 @@
 namespace OSMI\Survey\Graph\Repository;
 
 use GraphAware\Bolt\Result\Result;
+use OSMI\Survey\Graph\Model\Answer;
 use OSMI\Survey\Graph\Model\Question;
 use OSMI\Survey\Graph\Response;
 
@@ -24,20 +25,25 @@ class Analysis extends Neo4j
     public function findQuestion($id)
     {
         $cql = <<<CQL
-MATCH (q:Question { id: { id }})
-RETURN q
+MATCH (q:Question { id: { id }})-[:HAS_ANSWER]->(a)
+RETURN q, COLLECT(a) AS answers
 CQL;
 
         $params = [
             'id' => $id,
         ];
 
-        $result = $this->client->run($cql, $params)
-            ->getRecord()
-            ->get('q')
-            ->values();
+        $result = $this->client->run($cql, $params);
+        $record = $result->getRecord();
+        $data = $record->get('q')->values();
 
-        return new Question($result);
+        foreach ($record->get('answers') as $answer) {
+            $data['answers'][] = new Answer($answer->values());
+        }
+
+        $question = new Question($data);
+
+        return $question;
     }
 
     /**
@@ -50,8 +56,8 @@ CQL;
         $questions = [];
 
         $cql = <<<CQL
-MATCH (q:Question)
-RETURN q
+MATCH (q:Question)-[:HAS_ANSWER]->(a)
+RETURN q, COLLECT(a) AS answers
 ORDER BY q.order
 CQL;
 
@@ -70,7 +76,13 @@ CQL;
         $result = $this->client->run($cql, $params);
 
         foreach ($result->records() as $record) {
-            $questions[] = new Question($record->get('q')->values());
+            $data = $record->get('q')->values();
+
+            foreach ($record->get('answers') as $answer) {
+                $data['answers'][] = new Answer($answer->values());
+            }
+
+            $questions[] = new Question($data);
         }
 
         return $questions;

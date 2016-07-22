@@ -24,6 +24,7 @@ class Question extends AbstractModel
     protected $id;
     protected $fieldId;
     protected $question;
+    protected $answers;
     protected $order;
 
     public function getId()
@@ -39,6 +40,11 @@ class Question extends AbstractModel
     public function getQuestion()
     {
         return $this->question;
+    }
+
+    public function getAnswers()
+    {
+        return $this->answers;
     }
 
     public function getOrder()
