@@ -9,6 +9,7 @@ namespace OSMI\Survey\Graph\Repository;
 
 use GraphAware\Bolt\Result\Result;
 use OSMI\Survey\Graph\Model\Answer;
+use OSMI\Survey\Graph\Model\Person;
 use OSMI\Survey\Graph\Model\Question;
 use OSMI\Survey\Graph\Response;
 
@@ -86,6 +87,75 @@ CQL;
         }
 
         return $questions;
+    }
+
+    /**
+     * Find all respondents.
+     *
+     * @return Person[]
+     */
+    public function findAllRespondents($skip = 0, $limit = 0)
+    {
+        $cql = <<<CQL
+MATCH (p:Person)
+OPTIONAL MATCH (p)-[:LIVES_IN_COUNTRY]->(countryResidence)
+OPTIONAL MATCH (p)-[:LIVES_IN_STATE]->(stateResidence)
+OPTIONAL MATCH (p)-[:WORKS_IN]->(stateWork)
+OPTIONAL MATCH (p)-[:WORKS_AS]->(profession)
+RETURN p, countryResidence, stateResidence, stateWork, profession
+ORDER BY p.token
+CQL;
+
+        $params = [];
+
+        if ($skip > 0) {
+            $cql .= ' SKIP { skip }';
+            $params['skip'] = $skip;
+        }
+
+        if ($limit > 0) {
+            $cql .= ' LIMIT { limit }';
+            $params['limit'] = $limit;
+        }
+
+        $result = $this->client->run($cql, $params);
+        $entities = [];
+
+        foreach ($result->records() as $record) {
+            $data = $record->get('p')->values();
+            $entities[] = new Person($data);
+        }
+
+        return $entities;
+    }
+
+    /**
+     * Finds single respondent.
+     *
+     * @return Person
+     */
+    public function findRespondent($token)
+    {
+        $cql = <<<CQL
+MATCH (p:Person { token: { token }})
+OPTIONAL MATCH (p)-[:LIVES_IN_COUNTRY]->(countryResidence)
+OPTIONAL MATCH (p)-[:LIVES_IN_STATE]->(stateResidence)
+OPTIONAL MATCH (p)-[:WORKS_IN]->(stateWork)
+OPTIONAL MATCH (p)-[:WORKS_AS]->(profession)
+RETURN p, countryResidence, stateResidence, stateWork, profession
+CQL;
+
+        $params = [
+            'token' => $token,
+        ];
+
+        $result = $this->client->run($cql, $params);
+        $record = $result->getRecord();
+        $data = $record->get('p')->values();
+
+        $respondent = new Person($data);
+
+        return $respondent;
     }
 
     /**
