@@ -49,12 +49,12 @@ final class Response
     private $question;
     private $questionText;
     private $answers = [];
-    private $totalAnswers;
+    private $totalResponses;
 
     /**
      * Public constructor.
      *
-     * @param string $question Question asked
+     * @param Question $question Question asked
      * @param array  $answers  Answers to $question
      */
     public function __construct(Question $question, array $answers = [])
@@ -63,7 +63,7 @@ final class Response
         $this->question = $question;
         $this->answers = $answers;
         $this->sortAnswers();
-        $this->totalAnswers = $this->sumAnswers();
+        $this->totalResponses = $this->sumAnswers();
     }
 
     public function getId()
@@ -92,13 +92,13 @@ final class Response
     }
 
     /**
-     * Gets total number of answers.
+     * Gets total number of responses.
      *
      * @return int
      */
-    public function getTotalAnswers()
+    public function getTotalResponses()
     {
-        return $this->totalAnswers;
+        return $this->totalResponses;
     }
 
     /**
