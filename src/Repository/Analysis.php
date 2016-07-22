@@ -194,7 +194,7 @@ CQL;
         $cql = <<<CQL
 MATCH (q:Question { id: { questionId }})-[:HAS_ANSWER]->(a)<-[:ANSWERED]-()
 WITH q, a, COUNT(*) AS responses
-RETURN q.question AS question, COLLECT({ answer: a.answer , responses: responses }) AS answers;
+RETURN q AS question, COLLECT({ answer: a.answer , responses: responses }) AS answers;
 CQL;
 
         $params = [
@@ -246,8 +246,9 @@ CQL;
         $responses = [];
 
         foreach ($result->getRecords() as $record) {
+            
             $responses[] = new Response(
-                $record->get('question'),
+                new Question($record->get('question')->values()),
                 $record->get('answers')
             );
         }

@@ -7,12 +7,47 @@
  */
 namespace OSMI\Survey\Graph;
 
+use Hateoas\Configuration\Annotation as Hateoas;
+use JMS\Serializer\Annotation as Serializer;
+use OSMI\Survey\Graph\Model\Question;
+
 /**
- * ValueObject containing a single Survey response.
+ * @Serializer\XmlRoot("response")
+ *
+ * @Hateoas\Relation("self", href = @Hateoas\Route(
+ *          "responses_get_one",
+ *          parameters = {
+ *              "questionId" = "expr(object.getId())"
+ *          }
+ *      )
+ *  )
+ *
+ * @Hateoas\Relation("question", href = @Hateoas\Route(
+ *          "questions_get_one",
+ *          parameters = {
+ *              "id" = "expr(object.getQuestion().getId())"
+ *          }
+ *      ),
+ *      embedded = "expr(object.getQuestion())",
+ *      exclusion = @Hateoas\Exclusion(
+ *          excludeIf = "expr(object.getQuestion() === null)"
+ *      )
+ * )
  */
-final class Response implements \JsonSerializable
+final class Response
 {
+    /**
+     * @Serializer\XmlAttribute
+     */
+    private $id;
+
+    /**
+     * @var Question
+     *
+     * @Serializer\Exclude
+     */
     private $question;
+    private $questionText;
     private $answers = [];
     private $totalAnswers;
 
@@ -22,12 +57,18 @@ final class Response implements \JsonSerializable
      * @param string $question Question asked
      * @param array  $answers  Answers to $question
      */
-    public function __construct($question, array $answers = [])
+    public function __construct(Question $question, array $answers = [])
     {
+        $this->id = $question->getId();
         $this->question = $question;
         $this->answers = $answers;
         $this->sortAnswers();
         $this->totalAnswers = $this->sumAnswers();
+    }
+
+    public function getId()
+    {
+        return $this->id;
     }
 
     /**
@@ -88,17 +129,5 @@ final class Response implements \JsonSerializable
 
             return ($a['responses'] > $b['responses']) ? -1 : 1;
         });
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function jsonSerialize()
-    {
-        return [
-            'question' => $this->getQuestion(),
-            'answers' => $this->getAnswers(),
-            'totalAnswers' => $this->getTotalAnswers(),
-        ];
     }
 }

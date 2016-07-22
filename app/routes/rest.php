@@ -97,3 +97,14 @@ $app->get('/respondents/{token}', function (Request $request, Response $response
         ->withHeader('Content-Type', 'application/vnd.osmi-v1+json')
         ->write($json);
 })->setName('respondents_get_one');
+
+$app->get('/responses/{questionId}', function (Request $request, Response $response, array $args) {
+    $repo = $this->get('analysisRepository');
+    $surveyResponse = $repo->getSingleReponse($args['questionId']);
+
+    $json = $this->get('hateoas')->serialize($surveyResponse, 'json');
+
+    return $response
+        ->withHeader('Content-Type', 'application/vnd.osmi-v1+json')
+        ->write($json);
+})->setName('responses_get_one');
