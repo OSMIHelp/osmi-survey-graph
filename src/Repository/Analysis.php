@@ -216,7 +216,7 @@ SKIP { skip }
 LIMIT { limit }
 MATCH (q)-[:HAS_ANSWER]->(a)<-[:ANSWERED]-()
 WITH q, a, COUNT(*) AS responses
-RETURN q.order AS order, q.question AS question, COLLECT({ answer: a.answer , responses: responses }) AS answers
+RETURN q AS question, COLLECT({ answer: a.answer , responses: responses }) AS answers
 ORDER BY q.order;
 CQL;
 
@@ -246,7 +246,6 @@ CQL;
         $responses = [];
 
         foreach ($result->getRecords() as $record) {
-            
             $responses[] = new Response(
                 new Question($record->get('question')->values()),
                 $record->get('answers')

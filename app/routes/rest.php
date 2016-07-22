@@ -98,6 +98,43 @@ $app->get('/respondents/{token}', function (Request $request, Response $response
         ->write($json);
 })->setName('respondents_get_one');
 
+$app->get('/responses', function (Request $request, Response $response, array $args) {
+    $pageSize = 10;
+    $pageNumber = (int) $request->getQueryParam('page', 1);
+    $skip = $pageSize * ($pageNumber - 1);
+    $limit = (int) $request->getQueryParam('limit', $pageSize);
+
+    $repo = $this->get('analysisRepository');
+    $surveyResponses = $repo->getResponses($skip, $limit);
+    // TODO: Count Response entities (of which there aren't really any, this is a made up entity);
+    $totalResponses = $repo->countQuestions();
+
+    $totalPages = (int) ceil($totalResponses / $limit);
+
+    $paginated = new PaginatedRepresentation(
+        new CollectionRepresentation(
+            $surveyResponses,
+            'responses', // embedded rel
+            'responses'  // xml element name
+        ),
+        $route = 'responses_get_all',
+        $parameters = [],
+        $pageNumber,
+        $limit,
+        $totalPages,
+        $pageParameterName = 'page',
+        $limitParameterName = 'limit',
+        $generateAbsoluteUrls = false,
+        $totalResponses
+    );
+
+    $json = $this->get('hateoas')->serialize($paginated, 'json');
+
+    return $response
+        ->withHeader('Content-Type', 'application/vnd.foodapp-v1+json')
+        ->write($json);
+})->setName('responses_get_all');
+
 $app->get('/responses/{questionId}', function (Request $request, Response $response, array $args) {
     $repo = $this->get('analysisRepository');
     $surveyResponse = $repo->getSingleReponse($args['questionId']);

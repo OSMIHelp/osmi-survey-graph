@@ -55,7 +55,7 @@ final class Response
      * Public constructor.
      *
      * @param Question $question Question asked
-     * @param array  $answers  Answers to $question
+     * @param array    $answers  Answers to $question
      */
     public function __construct(Question $question, array $answers = [])
     {
