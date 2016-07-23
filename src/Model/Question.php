@@ -23,6 +23,12 @@ use JMS\Serializer\Annotation as Serializer;
  *          exclusion = @Hateoas\Exclusion(
  *              excludeIf = "expr(false !== object.hasAnswers())"
  *          )
+ *      ),
+ *      href = @Hateoas\Route(
+ *          "question_answers",
+ *          parameters = {
+ *              "id" = "expr(object.getId())"
+ *          }
  *      )
  * )
  */
