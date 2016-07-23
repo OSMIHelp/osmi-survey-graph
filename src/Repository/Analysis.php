@@ -11,7 +11,6 @@ use GraphAware\Bolt\Result\Result;
 use OSMI\Survey\Graph\Model\Answer;
 use OSMI\Survey\Graph\Model\Person;
 use OSMI\Survey\Graph\Model\Question;
-use OSMI\Survey\Graph\Response;
 
 /**
  * Performs OSMI survey data analysis.
@@ -26,8 +25,10 @@ class Analysis extends Neo4j
     public function findQuestion($id)
     {
         $cql = <<<CQL
-MATCH (q:Question { id: { id }})-[:HAS_ANSWER]->(a)
-RETURN q, COLLECT(a) AS answers
+MATCH (q:Question { id: { id }})-[:HAS_ANSWER]->(a)<-[:ANSWERED]-()
+WITH q, a, COUNT(*) AS responses
+WITH q, COLLECT({ answer: a, responses: responses }) AS answers
+RETURN q, answers, REDUCE(totalResponses = 0, n IN answers | totalResponses + n.responses) AS totalResponses
 CQL;
 
         $params = [
@@ -35,16 +36,8 @@ CQL;
         ];
 
         $result = $this->client->run($cql, $params);
-        $record = $result->getRecord();
-        $data = $record->get('q')->values();
 
-        foreach ($record->get('answers') as $answer) {
-            $data['answers'][] = new Answer($answer->values());
-        }
-
-        $question = new Question($data);
-
-        return $question;
+        return $this->buildSingleQuestion($result);
     }
 
     /**
@@ -52,41 +45,53 @@ CQL;
      *
      * @return Question[]
      */
-    public function findAllQuestions($skip = 0, $limit = 0)
+    public function findAllQuestions($skip = 0, $limit = 100)
     {
         $questions = [];
 
         $cql = <<<CQL
-MATCH (q:Question)-[:HAS_ANSWER]->(a)
-RETURN q, COLLECT(a) AS answers
+MATCH (q:Question)-[:HAS_ANSWER]->(a)<-[:ANSWERED]-()
+WITH q, a, COUNT(*) AS responses
+WITH q, COLLECT({ answer: a, responses: responses }) AS answers
+RETURN q, REDUCE(totalResponses = 0, n IN answers | totalResponses + n.responses) AS totalResponses, answers
 ORDER BY q.order
+SKIP { skip }
+LIMIT { limit }
 CQL;
 
-        $params = [];
-
-        if ($skip > 0) {
-            $cql .= ' SKIP { skip }';
-            $params['skip'] = $skip;
-        }
-
-        if ($limit > 0) {
-            $cql .= ' LIMIT { limit }';
-            $params['limit'] = $limit;
-        }
+        $params = [
+            'skip' => $skip,
+            'limit' => $limit,
+        ];
 
         $result = $this->client->run($cql, $params);
 
-        foreach ($result->records() as $record) {
-            $data = $record->get('q')->values();
+        return $this->buildQuestions($result);
+    }
 
-            foreach ($record->get('answers') as $answer) {
-                $data['answers'][] = new Answer($answer->values());
-            }
+    /**
+     * Finds single Answer.
+     *
+     * @return Answer
+     */
+    public function findAnswer($hash)
+    {
+        $cql = <<<CQL
+MATCH (q)-[:HAS_ANSWER]->(a:Answer { hash: { hash }})<-[:ANSWERED]-()
+RETURN q, a, COUNT(*) AS responses
+CQL;
 
-            $questions[] = new Question($data);
-        }
+        $params = [
+            'hash' => $hash,
+        ];
 
-        return $questions;
+        $result = $this->client->run($cql, $params);
+        $record = $result->getRecord();
+        $data = $record->get('a')->values();
+        $data['responses'] = $record->get('responses');
+        $question = new Question($record->get('q')->values());
+
+        return new Answer($data, $question);
     }
 
     /**
@@ -94,39 +99,143 @@ CQL;
      *
      * @return Person[]
      */
-    public function findAllRespondents($skip = 0, $limit = 0)
+    public function findAllRespondents($skip = 0, $limit = 100)
     {
         $cql = <<<CQL
 MATCH (p:Person)
-OPTIONAL MATCH (p)-[:LIVES_IN_COUNTRY]->(countryResidence)
-OPTIONAL MATCH (p)-[:LIVES_IN_STATE]->(stateResidence)
-OPTIONAL MATCH (p)-[:WORKS_IN]->(stateWork)
-OPTIONAL MATCH (p)-[:WORKS_AS]->(profession)
-RETURN p, countryResidence, stateResidence, stateWork, profession
+RETURN p
 ORDER BY p.token
+SKIP { skip }
+LIMIT { limit }
 CQL;
 
-        $params = [];
-
-        if ($skip > 0) {
-            $cql .= ' SKIP { skip }';
-            $params['skip'] = $skip;
-        }
-
-        if ($limit > 0) {
-            $cql .= ' LIMIT { limit }';
-            $params['limit'] = $limit;
-        }
+        $params = [
+            'skip' => $skip,
+            'limit' => $limit,
+        ];
 
         $result = $this->client->run($cql, $params);
-        $entities = [];
+        $resources = [];
 
         foreach ($result->records() as $record) {
             $data = $record->get('p')->values();
-            $entities[] = new Person($data);
+            $resources[] = new Person($data);
         }
 
-        return $entities;
+        return $resources;
+    }
+
+    /**
+     * Find all respondents who responded to a question with the given answer.
+     *
+     * @return Person[]
+     */
+    public function findAllRespondentsByAnswer($hash, $skip = 0, $limit = 100)
+    {
+        $cql = <<<CQL
+MATCH (a:Answer { hash: { hash }})<-[:ANSWERED]-(p)
+RETURN p
+ORDER BY p.token
+SKIP { skip }
+LIMIT { limit }
+CQL;
+
+        $params = [
+            'hash' => $hash,
+            'skip' => $skip,
+            'limit' => $limit,
+        ];
+
+        $result = $this->client->run($cql, $params);
+        $resources = [];
+
+        foreach ($result->records() as $record) {
+            $data = $record->get('p')->values();
+            $resources[] = new Person($data);
+        }
+
+        return $resources;
+    }
+
+    /**
+     * Find all answers by respondent.
+     *
+     * @return Answer[]
+     */
+    public function findAllAnswersByRespondent($token, $skip = 0, $limit = 100)
+    {
+        $cql = <<<CQL
+MATCH (p:Person { token: { token }})-[:ANSWERED]->(a)<-[:HAS_ANSWER]-(q)
+RETURN a, q
+ORDER BY a.hash
+SKIP { skip }
+LIMIT { limit }
+CQL;
+
+        $params = [
+            'token' => $token,
+            'skip' => $skip,
+            'limit' => $limit,
+        ];
+
+        $result = $this->client->run($cql, $params);
+        $resources = [];
+
+        foreach ($result->records() as $record) {
+            $data = $record->get('a')->values();
+            $resources[] = new Answer(
+                $data,
+                new Question($record->get('q')->values())
+            );
+        }
+
+        return $resources;
+    }
+
+    /**
+     * How many answers did this repondent provide?
+     *
+     * @param string $token Person token
+     *
+     * @return int
+     */
+    public function countAnswersByRespondent($token)
+    {
+        $cql = <<<CQL
+MATCH (p:Person { token: { token }})-[:ANSWERED]->(a)
+RETURN COUNT(a) AS count;
+CQL;
+
+        $params = [
+            'token' => $token,
+        ];
+
+        $result = $this->client->run($cql, $params);
+
+        return (int) $result->getRecord()->get('count');
+    }
+
+    /**
+     * How many respondents replied with this answer.
+     *
+     * @param string $hash Answer hash
+     *
+     * @return int
+     */
+    public function countRespondentsByAnswer($hash)
+    {
+        $cql = <<<CQL
+MATCH (a:Answer { hash: { hash }})<-[:ANSWERED]-(p)
+RETURN COUNT(p) AS respondents;
+CQL;
+
+        $params = [
+            'hash' => $hash,
+        ];
+
+        $result = $this->client->run($cql, $params);
+
+        return (int) $result->getRecord()->get('respondents');
     }
 
     /**
@@ -159,99 +268,50 @@ CQL;
     }
 
     /**
-     * How many questions are in the survey.
+     * How many named resources exist.
      *
-     * @return int
+     * @return string $name Resource name
      */
-    public function countQuestions()
+    public function countResources($name)
     {
-        $result = $this->client->run('MATCH (n:Question) RETURN COUNT(n) AS questions;');
+        $cql = sprintf(
+            'MATCH (n:%s) RETURN COUNT(n) AS count;',
+            ucfirst(strtolower($name))
+        );
+        $result = $this->client->run($cql);
 
-        return (int) $result->getRecord()->get('questions');
+        return (int) $result->getRecord()->get('count');
     }
 
-    /**
-     * How many people responded to the survey?
-     *
-     * @return int
-     */
-    public function countRespondents()
+    private function buildSingleQuestion(Result $result)
     {
-        $result = $this->client->run('MATCH (n:Person) RETURN COUNT(n) AS respondents;');
+        $resources = $this->buildQuestions($result);
 
-        return (int) $result->getRecord()->get('respondents');
-    }
-
-    /**
-     * Gets a the response to a single question.
-     *
-     * @param string $questionId
-     *
-     * @return array
-     */
-    public function getSingleReponse($questionId)
-    {
-        $cql = <<<CQL
-MATCH (q:Question { id: { questionId }})-[:HAS_ANSWER]->(a)<-[:ANSWERED]-()
-WITH q, a, COUNT(*) AS responses
-RETURN q AS question, COLLECT({ answer: a.answer , responses: responses }) AS answers;
-CQL;
-
-        $params = [
-            'questionId' => $questionId,
-        ];
-
-        $result = $this->client->run($cql, $params);
-
-        return $this->buildSingleResponse($result);
-    }
-
-    public function getResponses($skip = 0, $limit = 200)
-    {
-        $cql = <<<CQL
-MATCH (q:Question)
-WITH q
-ORDER BY q.order
-SKIP { skip }
-LIMIT { limit }
-MATCH (q)-[:HAS_ANSWER]->(a)<-[:ANSWERED]-()
-WITH q, a, COUNT(*) AS responses
-RETURN q AS question, COLLECT({ answer: a.answer , responses: responses }) AS answers
-ORDER BY q.order;
-CQL;
-
-        $params = [
-            'skip' => $skip,
-            'limit' => $limit,
-        ];
-
-        $result = $this->client->run($cql, $params);
-
-        return $this->buildResponses($result);
-    }
-
-    private function buildSingleResponse(Result $result)
-    {
-        $responses = $this->buildResponses($result);
-
-        if (empty($responses)) {
+        if (empty($resources)) {
             return;
         }
 
-        return $responses[0];
+        return $resources[0];
     }
 
-    private function buildResponses(Result $result)
+    private function buildQuestions(Result $result)
     {
-        $responses = [];
+        $resources = [];
 
         foreach ($result->getRecords() as $record) {
-            $responses[] = new Response(
-                new Question($record->get('question')->values()),
-                $record->get('answers')
-            );
+            $data = $record->get('q')->values();
+            $data['totalResponses'] = $record->get('totalResponses');
+            $question = new Question($data);
+
+            foreach ($record->get('answers') as $collection) {
+                $answerData = $collection['answer']->values();
+                $answerData['responses'] = $collection['responses'];
+                $question->addAnswer(new Answer($answerData));
+            }
+
+            $resources[] = $question;
         }
 
-        return $responses;
+        return $resources;
     }
 }
