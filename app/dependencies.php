@@ -82,4 +82,8 @@ $container['notAllowedHandler'] = function ($c) {
     };
 };
 
+$container['halResponse'] = function ($c) {
+    return new \OSMI\Survey\Graph\HALResponse($c['hateoas'], $c['settings']['contentType']);
+};
+
 return $container;
