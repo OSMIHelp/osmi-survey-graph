@@ -15,5 +15,6 @@ return [
         'neo4j' => [
             'graphUrl' => getenv('GRAPH_URL'),
         ],
+        'contentType' => 'application/vnd.osmi-v1+json',
     ],
 ];
