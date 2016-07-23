@@ -15,6 +15,16 @@ use JMS\Serializer\Annotation as Serializer;
  *          }
  *      )
  *  )
+ *
+ * @Hateoas\Relation(
+ *      name = "answers",
+ *      embedded = @Hateoas\Embedded(
+ *          "expr(object.getAnswers())",
+ *          exclusion = @Hateoas\Exclusion(
+ *              excludeIf = "expr(false !== object.hasAnswers())"
+ *          )
+ *      )
+ * )
  */
 class Question extends AbstractModel
 {
@@ -24,7 +34,12 @@ class Question extends AbstractModel
     protected $id;
     protected $fieldId;
     protected $question;
-    protected $answers;
+
+    /**
+     * @Serializer\Exclude
+     */
+    protected $answers = [];
+    protected $totalResponses = 0;
     protected $order;
 
     public function getId()
@@ -47,8 +62,23 @@ class Question extends AbstractModel
         return $this->answers;
     }
 
+    public function getTotalResponses()
+    {
+        return $this->totalResponses;
+    }
+
     public function getOrder()
     {
         return $this->order;
+    }
+
+    public function addAnswer(Answer $answer)
+    {
+        $this->answers[] = $answer;
+    }
+
+    public function hasAnswers()
+    {
+        return empty($this->answers) !== false;
     }
 }
