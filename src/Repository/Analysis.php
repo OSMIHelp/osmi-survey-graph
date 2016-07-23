@@ -126,6 +126,37 @@ CQL;
     }
 
     /**
+     * Find all answers belonging to specified question.
+     *
+     * @param string $id Question id
+     *
+     * @return Answer[]
+     */
+    public function findAllAnswersByQuestion($id)
+    {
+        $cql = <<<CQL
+MATCH (q:Question { id: 'yesno_18065319' })-[:HAS_ANSWER]->(a)
+RETURN q, a;
+CQL;
+
+        $params = [
+            'id' => $id,
+        ];
+
+        $result = $this->client->run($cql, $params);
+        $resources = [];
+
+        $question = new Question($result->getRecord()->get('q')->values());
+
+        foreach ($result->records() as $record) {
+            $data = $record->get('a')->values();
+            $resources[] = new Answer($data, $question);
+        }
+
+        return $resources;
+    }
+
+    /**
      * Find all respondents who responded to a question with the given answer.
      *
      * @return Person[]
