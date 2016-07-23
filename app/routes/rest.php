@@ -5,52 +5,120 @@ use Hateoas\Representation\PaginatedRepresentation;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
-$app->get('/questions', function (Request $request, Response $response, array $args) {
+$app->group('/questions', function () {
+    $this->get('', function (Request $request, Response $response, array $args) {
+        $pageSize = 10;
+        $pageNumber = (int) $request->getQueryParam('page', 1);
+        $skip = $pageSize * ($pageNumber - 1);
+        $limit = (int) $request->getQueryParam('limit', $pageSize);
+
+        $repo = $this->get('analysisRepository');
+        $questions = $repo->findAllQuestions($skip, $limit);
+        $totalQuestions = $repo->countResources('Question');
+
+        $totalPages = (int) ceil($totalQuestions / $limit);
+
+        $paginated = new PaginatedRepresentation(
+            new CollectionRepresentation(
+                $questions,
+                'questions', // embedded rel
+                'questions'  // xml element name
+            ),
+            $route = 'questions_get_all',
+            $parameters = [],
+            $pageNumber,
+            $limit,
+            $totalPages,
+            $pageParameterName = 'page',
+            $limitParameterName = 'limit',
+            $generateAbsoluteUrls = false,
+            $totalQuestions
+        );
+
+        return $this->get('halResponse')
+            ->withJson($response, $paginated);
+    })->setName('questions_get_all');
+
+    $this->get('/{id}', function (Request $request, Response $response, array $args) {
+        $repo = $this->get('analysisRepository');
+        $question = $repo->findQuestion($args['id']);
+
+        return $this->get('halResponse')
+            ->withJson($response, $question);
+    })->setName('questions_get_one');
+});
+
+$app->get('/answers/{hash}', function (Request $request, Response $response, array $args) {
+    $repo = $this->get('analysisRepository');
+    $resource = $repo->findAnswer($args['hash']);
+
+    return $this->get('halResponse')
+        ->withJson($response, $resource);
+})->setName('answers_get_one');
+
+$app->get('/answers/{hash}/respondents', function (Request $request, Response $response, array $args) {
     $pageSize = 10;
     $pageNumber = (int) $request->getQueryParam('page', 1);
     $skip = $pageSize * ($pageNumber - 1);
     $limit = (int) $request->getQueryParam('limit', $pageSize);
 
     $repo = $this->get('analysisRepository');
-    $questions = $repo->findAllQuestions($skip, $limit);
-    $totalQuestions = $repo->countQuestions();
-
-    $totalPages = (int) ceil($totalQuestions / $limit);
+    $resources = $repo->findAllRespondentsByAnswer($args['hash'], $skip, $limit);
+    $totalResources = $repo->countRespondentsByAnswer($args['hash']);
+    $totalPages = (int) ceil($totalResources / $limit);
 
     $paginated = new PaginatedRepresentation(
         new CollectionRepresentation(
-            $questions,
-            'questions', // embedded rel
-            'questions'  // xml element name
+            $resources,
+            'respondents', // embedded rel
+            'respondents'  // xml element name
         ),
-        $route = 'questions_get_all',
-        $parameters = [],
+        $route = 'answer_respondents',
+        $parameters = ['hash' => $args['hash']],
         $pageNumber,
         $limit,
         $totalPages,
         $pageParameterName = 'page',
         $limitParameterName = 'limit',
         $generateAbsoluteUrls = false,
-        $totalQuestions
+        $totalResources
     );
 
-    $json = $this->get('hateoas')->serialize($paginated, 'json');
+    return $this->get('halResponse')
+        ->withJson($response, $paginated);
+})->setName('answer_respondents');
 
-    return $response
-        ->withHeader('Content-Type', 'application/vnd.foodapp-v1+json')
-        ->write($json);
-})->setName('questions_get_all');
+$app->get('/respondents/{token}/answers', function (Request $request, Response $response, array $args) {
+    $pageSize = 10;
+    $pageNumber = (int) $request->getQueryParam('page', 1);
+    $skip = $pageSize * ($pageNumber - 1);
+    $limit = (int) $request->getQueryParam('limit', $pageSize);
 
-$app->get('/questions/{id}', function (Request $request, Response $response, array $args) {
     $repo = $this->get('analysisRepository');
-    $question = $repo->findQuestion($args['id']);
+    $resources = $repo->findAllAnswersByRespondent($args['token'], $skip, $limit);
+    $totalResources = $repo->countAnswersByRespondent($args['token']);
+    $totalPages = (int) ceil($totalResources / $limit);
 
-    $json = $this->get('hateoas')->serialize($question, 'json');
+    $paginated = new PaginatedRepresentation(
+        new CollectionRepresentation(
+            $resources,
+            'answers', // embedded rel
+            'answers'  // xml element name
+        ),
+        $route = 'respondent_answers',
+        $parameters = ['token' => $args['token']],
+        $pageNumber,
+        $limit,
+        $totalPages,
+        $pageParameterName = 'page',
+        $limitParameterName = 'limit',
+        $generateAbsoluteUrls = false,
+        $totalResources
+    );
 
-    return $response
-        ->withHeader('Content-Type', 'application/vnd.osmi-v1+json')
-        ->write($json);
-})->setName('questions_get_one');
+    return $this->get('halResponse')
+        ->withJson($response, $paginated);
+})->setName('respondent_answers');
 
 $app->get('/respondents', function (Request $request, Response $response, array $args) {
     $pageSize = 10;
@@ -60,7 +128,7 @@ $app->get('/respondents', function (Request $request, Response $response, array 
 
     $repo = $this->get('analysisRepository');
     $respondents = $repo->findAllRespondents($skip, $limit);
-    $totalQuestions = $repo->countRespondents();
+    $totalQuestions = $repo->countResources('Person');
 
     $totalPages = (int) ceil($totalQuestions / $limit);
 
@@ -81,67 +149,14 @@ $app->get('/respondents', function (Request $request, Response $response, array 
         $totalQuestions
     );
 
-    $json = $this->get('hateoas')->serialize($paginated, 'json');
-
-    return $response
-        ->withHeader('Content-Type', 'application/vnd.foodapp-v1+json')
-        ->write($json);
+    return $this->get('halResponse')
+        ->withJson($response, $paginated);
 })->setName('respondents_get_all');
 
 $app->get('/respondents/{token}', function (Request $request, Response $response, array $args) {
     $repo = $this->get('analysisRepository');
     $person = $repo->findRespondent($args['token']);
-    $json = $this->get('hateoas')->serialize($person, 'json');
 
-    return $response
-        ->withHeader('Content-Type', 'application/vnd.osmi-v1+json')
-        ->write($json);
+    return $this->get('halResponse')
+        ->withJson($response, $person);
 })->setName('respondents_get_one');
-
-$app->get('/responses', function (Request $request, Response $response, array $args) {
-    $pageSize = 10;
-    $pageNumber = (int) $request->getQueryParam('page', 1);
-    $skip = $pageSize * ($pageNumber - 1);
-    $limit = (int) $request->getQueryParam('limit', $pageSize);
-
-    $repo = $this->get('analysisRepository');
-    $surveyResponses = $repo->getResponses($skip, $limit);
-    // TODO: Count Response entities (of which there aren't really any, this is a made up entity);
-    $totalResponses = $repo->countQuestions();
-
-    $totalPages = (int) ceil($totalResponses / $limit);
-
-    $paginated = new PaginatedRepresentation(
-        new CollectionRepresentation(
-            $surveyResponses,
-            'responses', // embedded rel
-            'responses'  // xml element name
-        ),
-        $route = 'responses_get_all',
-        $parameters = [],
-        $pageNumber,
-        $limit,
-        $totalPages,
-        $pageParameterName = 'page',
-        $limitParameterName = 'limit',
-        $generateAbsoluteUrls = false,
-        $totalResponses
-    );
-
-    $json = $this->get('hateoas')->serialize($paginated, 'json');
-
-    return $response
-        ->withHeader('Content-Type', 'application/vnd.foodapp-v1+json')
-        ->write($json);
-})->setName('responses_get_all');
-
-$app->get('/responses/{questionId}', function (Request $request, Response $response, array $args) {
-    $repo = $this->get('analysisRepository');
-    $surveyResponse = $repo->getSingleReponse($args['questionId']);
-
-    $json = $this->get('hateoas')->serialize($surveyResponse, 'json');
-
-    return $response
-        ->withHeader('Content-Type', 'application/vnd.osmi-v1+json')
-        ->write($json);
-})->setName('responses_get_one');
