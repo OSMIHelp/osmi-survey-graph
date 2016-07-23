@@ -11,10 +11,6 @@ $app->get('/', function (Request $request, Response $response, array $args) {
                 'href' => '/',
                 'title' => 'You are here!',
             ],
-            'responses' => [
-                'href' => '/responses',
-                'title' => 'Survey responses',
-            ],
             'questions' => [
                 'href' => '/questions',
                 'title' => 'Survey questions',
