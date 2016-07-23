@@ -15,6 +15,14 @@ use JMS\Serializer\Annotation as Serializer;
  *          }
  *      )
  *  )
+ *
+ * @Hateoas\Relation("answers", href = @Hateoas\Route(
+ *          "respondent_answers",
+ *          parameters = {
+ *              "token" = "expr(object.getToken())"
+ *          }
+ *      )
+ *  )
  */
 class Person extends AbstractModel
 {
