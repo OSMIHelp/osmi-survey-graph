@@ -17,7 +17,7 @@ Either delete after implementation or update.
 
 - [x] Get all questions
 - [x] Get all respondents
-* Get answers based on how people answered question X
+- [x] Get answers based on how people answered question X (find answer, follow `respondents` rel)
 * here's the question, and I want to get the answers for that question
     * optionally you can pass clauses to filter.
     * Response counts based on demographic data for the users who responded
