@@ -141,10 +141,13 @@ CQL;
 
         $result = $this->client->run($cql, $params);
         $resources = [];
-
-        $question = new Question($result->getRecord()->get('q')->values());
+        $question = null;
 
         foreach ($result->records() as $record) {
+            if ($question === null) {
+                $question = new Question($record->get('q')->values());
+            }
+
             $data = $record->get('a')->values();
             $resources[] = new Answer($data, $question);
         }
