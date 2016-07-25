@@ -46,7 +46,7 @@ class Question extends AbstractModel
      * @Serializer\Exclude
      */
     protected $answers = [];
-    protected $totalResponses = 0;
+    protected $responses = 0;
     protected $order;
     
     public function getUuid()
@@ -74,9 +74,9 @@ class Question extends AbstractModel
         return $this->answers;
     }
 
-    public function getTotalResponses()
+    public function getResponses()
     {
-        return $this->totalResponses;
+        return $this->responses;
     }
 
     public function getOrder()
