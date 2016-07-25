@@ -40,7 +40,7 @@ class Person extends AbstractModel
     protected $dateLand;
     protected $userAgent;
     protected $platform;
-    
+
     public function getUuid()
     {
         return $this->uuid;

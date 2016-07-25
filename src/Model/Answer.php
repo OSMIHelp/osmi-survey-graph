@@ -50,7 +50,7 @@ class Answer extends AbstractModel
      * @Serializer\Exclude
      */
     protected $question;
-    
+
     public function getUuid()
     {
         return $this->uuid;
