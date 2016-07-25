@@ -6,16 +6,26 @@ echo 'Creating constraints and indexes.' . PHP_EOL;
 
 $constraints = [
     ['Answer' => 'hash'],
+    ['Answer' => 'uuid'],
     ['Country' => 'name'],
+    ['Country' => 'uuid'],
     ['Disorder' => 'name'],
+    ['Disorder' => 'uuid'],
     ['Group' => 'id'],
+    ['Group' => 'uuid'],
     ['Person' => 'token'],
+    ['Person' => 'uuid'],
     ['Planet' => 'name'],
+    ['Planet' => 'uuid'],
     ['Profession' => 'name'],
+    ['Profession' => 'uuid'],
     ['Question' => 'id'],
     ['Question' => 'order'],
+    ['Question' => 'uuid'],
     ['State' => 'name'],
+    ['State' => 'uuid'],
     ['Survey' => 'id'],
+    ['Survey' => 'uuid'],
 ];
 
 $neo4j = $container['neo4j'];
@@ -82,6 +92,8 @@ try {
 $extractDataRepo = $container['extractDataRepository'];
 
 try {
+    echo 'Extracting data.' . PHP_EOL;
+
     $extractDataRepo->extractData();
 
     echo 'Finished extracting data.' . PHP_EOL;
