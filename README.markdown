@@ -1,9 +1,28 @@
 # 2016 OSMI Survey Graph
 
+Initial setup:
+
 * Copy `.env.example`
 * Update the `GRAPH_URL`
+* Ensure an instance of Neo4j 3.x is running (Bolt protocol)
 * Run `php -f scripts/load-data.php`
-* Enjoy!
+* Start the web server: `./server.sh`
+* Visit [http://localhost:8888/browser/browser.html](http://localhost:8888/browser/browser.html)
+* Explore the API using the HAL browser
+
+## API Endpoints
+
+These are very rough notes describing the desired functionality of the API.
+Either delete after implementation or update.
+
+- [x] Get all questions
+- [x] Get all respondents
+* Get answers based on how people answered question X
+* here's the question, and I want to get the answers for that question
+    * optionally you can pass clauses to filter.
+    * Response counts based on demographic data for the users who responded
+    * "What I am imagine is a tool where you could select certain demographics about users, and then see how they responded to certain questions"
+    * "You also might have the capability of saying if they answered this question with this answer, how did they answer another question"
 
 ## Queries
 
