@@ -39,22 +39,22 @@ $app->group('/questions', function () {
             ->withJson($response, $paginated);
     })->setName('questions_get_all');
 
-    $this->get('/{id}', function (Request $request, Response $response, array $args) {
+    $this->get('/{uuid}', function (Request $request, Response $response, array $args) {
         $repo = $this->get('analysisRepository');
-        $question = $repo->findQuestion($args['id']);
+        $question = $repo->findQuestion($args['uuid']);
 
         return $this->get('halResponse')
             ->withJson($response, $question);
     })->setName('questions_get_one');
 
-    $this->get('/{id}/answers', function (Request $request, Response $response, array $args) {
+    $this->get('/{uuid}/answers', function (Request $request, Response $response, array $args) {
         $pageSize = 100;
         $pageNumber = (int) $request->getQueryParam('page', 1);
         $skip = $pageSize * ($pageNumber - 1);
         $limit = (int) $request->getQueryParam('limit', $pageSize);
 
         $repo = $this->get('analysisRepository');
-        $resources = $repo->findAllAnswersByQuestion($args['id']);
+        $resources = $repo->findAllAnswersByQuestion($args['uuid']);
         $totalResources = count($resources);
         $totalPages = (int) ceil($totalResources / $limit);
 
@@ -65,7 +65,7 @@ $app->group('/questions', function () {
                 'answers'  // xml element name
             ),
             $route = 'question_answers',
-            $parameters = ['id' => $args['id']],
+            $parameters = ['uuid' => $args['uuid']],
             $pageNumber,
             $limit,
             $totalPages,
@@ -80,10 +80,10 @@ $app->group('/questions', function () {
     })->setName('question_answers');
 });
 
-$app->group('/answers/{hash}', function () {
+$app->group('/answers/{uuid}', function () {
     $this->get('', function (Request $request, Response $response, array $args) {
         $repo = $this->get('analysisRepository');
-        $resource = $repo->findAnswer($args['hash']);
+        $resource = $repo->findAnswer($args['uuid']);
 
         return $this->get('halResponse')
             ->withJson($response, $resource);
@@ -96,8 +96,8 @@ $app->group('/answers/{hash}', function () {
         $limit = (int) $request->getQueryParam('limit', $pageSize);
 
         $repo = $this->get('analysisRepository');
-        $resources = $repo->findAllRespondentsByAnswer($args['hash'], $skip, $limit);
-        $totalResources = $repo->countRespondentsByAnswer($args['hash']);
+        $resources = $repo->findAllRespondentsByAnswer($args['uuid'], $skip, $limit);
+        $totalResources = $repo->countRespondentsByAnswer($args['uuid']);
         $totalPages = (int) ceil($totalResources / $limit);
 
         $paginated = new PaginatedRepresentation(
@@ -107,7 +107,7 @@ $app->group('/answers/{hash}', function () {
                 'respondents'  // xml element name
             ),
             $route = 'answer_respondents',
-            $parameters = ['hash' => $args['hash']],
+            $parameters = ['uuid' => $args['uuid']],
             $pageNumber,
             $limit,
             $totalPages,
@@ -156,23 +156,23 @@ $app->group('/respondents', function () {
             ->withJson($response, $paginated);
     })->setName('respondents_get_all');
 
-    $this->get('/{token}', function (Request $request, Response $response, array $args) {
+    $this->get('/{uuid}', function (Request $request, Response $response, array $args) {
         $repo = $this->get('analysisRepository');
-        $person = $repo->findRespondent($args['token']);
+        $person = $repo->findRespondent($args['uuid']);
 
         return $this->get('halResponse')
             ->withJson($response, $person);
     })->setName('respondents_get_one');
 
-    $this->get('/{token}/answers', function (Request $request, Response $response, array $args) {
+    $this->get('/{uuid}/answers', function (Request $request, Response $response, array $args) {
         $pageSize = 10;
         $pageNumber = (int) $request->getQueryParam('page', 1);
         $skip = $pageSize * ($pageNumber - 1);
         $limit = (int) $request->getQueryParam('limit', $pageSize);
 
         $repo = $this->get('analysisRepository');
-        $resources = $repo->findAllAnswersByRespondent($args['token'], $skip, $limit);
-        $totalResources = $repo->countAnswersByRespondent($args['token']);
+        $resources = $repo->findAllAnswersByRespondent($args['uuid'], $skip, $limit);
+        $totalResources = $repo->countAnswersByRespondent($args['uuid']);
         $totalPages = (int) ceil($totalResources / $limit);
 
         $paginated = new PaginatedRepresentation(
@@ -182,7 +182,7 @@ $app->group('/respondents', function () {
                 'answers'  // xml element name
             ),
             $route = 'respondent_answers',
-            $parameters = ['token' => $args['token']],
+            $parameters = ['uuid' => $args['uuid']],
             $pageNumber,
             $limit,
             $totalPages,

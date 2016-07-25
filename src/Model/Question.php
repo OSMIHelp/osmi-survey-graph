@@ -11,7 +11,7 @@ use JMS\Serializer\Annotation as Serializer;
  * @Hateoas\Relation("self", href = @Hateoas\Route(
  *          "questions_get_one",
  *          parameters = {
- *              "id" = "expr(object.getId())"
+ *              "uuid" = "expr(object.getUuid())"
  *          }
  *      )
  *  )
@@ -27,7 +27,7 @@ use JMS\Serializer\Annotation as Serializer;
  *      href = @Hateoas\Route(
  *          "question_answers",
  *          parameters = {
- *              "id" = "expr(object.getId())"
+ *              "uuid" = "expr(object.getUuid())"
  *          }
  *      )
  * )
@@ -37,6 +37,7 @@ class Question extends AbstractModel
     /**
      * @Serializer\XmlAttribute
      */
+    protected $uuid;
     protected $id;
     protected $fieldId;
     protected $question;
@@ -47,6 +48,11 @@ class Question extends AbstractModel
     protected $answers = [];
     protected $totalResponses = 0;
     protected $order;
+    
+    public function getUuid()
+    {
+        return $this->uuid;
+    }
 
     public function getId()
     {

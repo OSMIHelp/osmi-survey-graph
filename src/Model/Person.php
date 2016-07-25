@@ -11,7 +11,7 @@ use JMS\Serializer\Annotation as Serializer;
  * @Hateoas\Relation("self", href = @Hateoas\Route(
  *          "respondents_get_one",
  *          parameters = {
- *              "token" = "expr(object.getToken())"
+ *              "uuid" = "expr(object.getUuid())"
  *          }
  *      )
  *  )
@@ -19,7 +19,7 @@ use JMS\Serializer\Annotation as Serializer;
  * @Hateoas\Relation("answers", href = @Hateoas\Route(
  *          "respondent_answers",
  *          parameters = {
- *              "token" = "expr(object.getToken())"
+ *              "uuid" = "expr(object.getUuid())"
  *          }
  *      )
  *  )
@@ -29,8 +29,8 @@ class Person extends AbstractModel
     /**
      * @Serializer\XmlAttribute
      */
+    protected $uuid;
     protected $token;
-
     /**
      * @Serializer\Exclude
      */
@@ -40,6 +40,11 @@ class Person extends AbstractModel
     protected $dateLand;
     protected $userAgent;
     protected $platform;
+    
+    public function getUuid()
+    {
+        return $this->uuid;
+    }
 
     public function getToken()
     {

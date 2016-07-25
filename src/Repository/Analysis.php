@@ -22,17 +22,17 @@ class Analysis extends Neo4j
      *
      * @return Question
      */
-    public function findQuestion($id)
+    public function findQuestion($uuid)
     {
         $cql = <<<CQL
-MATCH (q:Question { id: { id }})-[:HAS_ANSWER]->(a)<-[:ANSWERED]-()
+MATCH (q:Question { uuid: { uuid }})-[:HAS_ANSWER]->(a)<-[:ANSWERED]-()
 WITH q, a, COUNT(*) AS responses
 WITH q, COLLECT({ answer: a, responses: responses }) AS answers
 RETURN q, answers, REDUCE(totalResponses = 0, n IN answers | totalResponses + n.responses) AS totalResponses
 CQL;
 
         $params = [
-            'id' => $id,
+            'uuid' => $uuid,
         ];
 
         $result = $this->client->run($cql, $params);
@@ -74,15 +74,15 @@ CQL;
      *
      * @return Answer
      */
-    public function findAnswer($hash)
+    public function findAnswer($uuid)
     {
         $cql = <<<CQL
-MATCH (q)-[:HAS_ANSWER]->(a:Answer { hash: { hash }})<-[:ANSWERED]-()
+MATCH (q)-[:HAS_ANSWER]->(a:Answer { uuid: { uuid }})<-[:ANSWERED]-()
 RETURN q, a, COUNT(*) AS responses
 CQL;
 
         $params = [
-            'hash' => $hash,
+            'uuid' => $uuid,
         ];
 
         $result = $this->client->run($cql, $params);
@@ -128,19 +128,19 @@ CQL;
     /**
      * Find all answers belonging to specified question.
      *
-     * @param string $id Question id
+     * @param string $uuid Question UUID
      *
      * @return Answer[]
      */
-    public function findAllAnswersByQuestion($id)
+    public function findAllAnswersByQuestion($uuid)
     {
         $cql = <<<CQL
-MATCH (q:Question { id: 'yesno_18065319' })-[:HAS_ANSWER]->(a)
+MATCH (q:Question { uuid: { uuid }})-[:HAS_ANSWER]->(a)
 RETURN q, a;
 CQL;
 
         $params = [
-            'id' => $id,
+            'uuid' => $uuid,
         ];
 
         $result = $this->client->run($cql, $params);
@@ -161,10 +161,10 @@ CQL;
      *
      * @return Person[]
      */
-    public function findAllRespondentsByAnswer($hash, $skip = 0, $limit = 100)
+    public function findAllRespondentsByAnswer($uuid, $skip = 0, $limit = 100)
     {
         $cql = <<<CQL
-MATCH (a:Answer { hash: { hash }})<-[:ANSWERED]-(p)
+MATCH (a:Answer { uuid: { uuid }})<-[:ANSWERED]-(p)
 RETURN p
 ORDER BY p.token
 SKIP { skip }
@@ -172,7 +172,7 @@ LIMIT { limit }
 CQL;
 
         $params = [
-            'hash' => $hash,
+            'uuid' => $uuid,
             'skip' => $skip,
             'limit' => $limit,
         ];
@@ -193,10 +193,10 @@ CQL;
      *
      * @return Answer[]
      */
-    public function findAllAnswersByRespondent($token, $skip = 0, $limit = 100)
+    public function findAllAnswersByRespondent($uuid, $skip = 0, $limit = 100)
     {
         $cql = <<<CQL
-MATCH (p:Person { token: { token }})-[:ANSWERED]->(a)<-[:HAS_ANSWER]-(q)
+MATCH (p:Person { uuid: { uuid }})-[:ANSWERED]->(a)<-[:HAS_ANSWER]-(q)
 RETURN a, q
 ORDER BY a.hash
 SKIP { skip }
@@ -204,7 +204,7 @@ LIMIT { limit }
 CQL;
 
         $params = [
-            'token' => $token,
+            'uuid' => $uuid,
             'skip' => $skip,
             'limit' => $limit,
         ];
@@ -226,19 +226,19 @@ CQL;
     /**
      * How many answers did this repondent provide?
      *
-     * @param string $token Person token
+     * @param string $uuid Person uuid
      *
      * @return int
      */
-    public function countAnswersByRespondent($token)
+    public function countAnswersByRespondent($uuid)
     {
         $cql = <<<CQL
-MATCH (p:Person { token: { token }})-[:ANSWERED]->(a)
+MATCH (p:Person { uuid: { uuid }})-[:ANSWERED]->(a)
 RETURN COUNT(a) AS count;
 CQL;
 
         $params = [
-            'token' => $token,
+            'uuid' => $uuid,
         ];
 
         $result = $this->client->run($cql, $params);
@@ -249,19 +249,19 @@ CQL;
     /**
      * How many respondents replied with this answer.
      *
-     * @param string $hash Answer hash
+     * @param string $uuid Answer uuid
      *
      * @return int
      */
-    public function countRespondentsByAnswer($hash)
+    public function countRespondentsByAnswer($uuid)
     {
         $cql = <<<CQL
-MATCH (a:Answer { hash: { hash }})<-[:ANSWERED]-(p)
+MATCH (a:Answer { uuid: { uuid }})<-[:ANSWERED]-(p)
 RETURN COUNT(p) AS respondents;
 CQL;
 
         $params = [
-            'hash' => $hash,
+            'uuid' => $uuid,
         ];
 
         $result = $this->client->run($cql, $params);
@@ -274,10 +274,10 @@ CQL;
      *
      * @return Person
      */
-    public function findRespondent($token)
+    public function findRespondent($uuid)
     {
         $cql = <<<CQL
-MATCH (p:Person { token: { token }})
+MATCH (p:Person { uuid: { uuid }})
 OPTIONAL MATCH (p)-[:LIVES_IN_COUNTRY]->(countryResidence)
 OPTIONAL MATCH (p)-[:LIVES_IN_STATE]->(stateResidence)
 OPTIONAL MATCH (p)-[:WORKS_IN]->(stateWork)
@@ -286,7 +286,7 @@ RETURN p, countryResidence, stateResidence, stateWork, profession
 CQL;
 
         $params = [
-            'token' => $token,
+            'uuid' => $uuid,
         ];
 
         $result = $this->client->run($cql, $params);
@@ -301,7 +301,7 @@ CQL;
     /**
      * How many named resources exist.
      *
-     * @return string $name Resource name
+     * @return string $name Resource (node) name
      */
     public function countResources($name)
     {
