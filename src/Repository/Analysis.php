@@ -25,7 +25,7 @@ class Analysis extends Neo4j
     public function findQuestion($uuid)
     {
         $cql = <<<CQL
-MATCH (q:Question { uuid: { uuid }})-[:HAS_ANSWER]->(a)<-[:ANSWERED]-()
+MATCH (q:Question { uuid: { uuid }})-[:HAS_ANSWER]->(a)
 RETURN q, COLLECT(a) AS answers
 CQL;
 
