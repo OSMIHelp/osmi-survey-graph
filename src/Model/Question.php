@@ -21,7 +21,7 @@ use JMS\Serializer\Annotation as Serializer;
  *      embedded = @Hateoas\Embedded(
  *          "expr(object.getAnswers())",
  *          exclusion = @Hateoas\Exclusion(
- *              excludeIf = "expr(false !== object.hasAnswers())"
+ *              excludeIf = "expr(false === object.hasAnswers())"
  *          )
  *      ),
  *      href = @Hateoas\Route(
@@ -48,7 +48,7 @@ class Question extends AbstractModel
     protected $answers = [];
     protected $responses = 0;
     protected $order;
-    
+
     public function getUuid()
     {
         return $this->uuid;
@@ -91,6 +91,10 @@ class Question extends AbstractModel
 
     public function hasAnswers()
     {
-        return empty($this->answers) !== false;
+        if (empty($this->answers)) {
+            return false;
+        }
+
+        return true;
     }
 }
