@@ -26,9 +26,7 @@ class Analysis extends Neo4j
     {
         $cql = <<<CQL
 MATCH (q:Question { uuid: { uuid }})-[:HAS_ANSWER]->(a)<-[:ANSWERED]-()
-WITH q, a, COUNT(*) AS responses
-WITH q, COLLECT({ answer: a, responses: responses }) AS answers
-RETURN q, answers, REDUCE(totalResponses = 0, n IN answers | totalResponses + n.responses) AS totalResponses
+RETURN q, COLLECT(a) AS answers
 CQL;
 
         $params = [
@@ -50,10 +48,9 @@ CQL;
         $questions = [];
 
         $cql = <<<CQL
-MATCH (q:Question)-[:HAS_ANSWER]->(a)<-[:ANSWERED]-()
-WITH q, a, COUNT(*) AS responses
-WITH q, COLLECT({ answer: a, responses: responses }) AS answers
-RETURN q, REDUCE(totalResponses = 0, n IN answers | totalResponses + n.responses) AS totalResponses, answers
+MATCH (q:Question)-[:HAS_ANSWER]->(a)
+WITH q, COLLECT(a) AS answers
+RETURN q, answers
 ORDER BY q.order
 SKIP { skip }
 LIMIT { limit }
@@ -77,8 +74,8 @@ CQL;
     public function findAnswer($uuid)
     {
         $cql = <<<CQL
-MATCH (q)-[:HAS_ANSWER]->(a:Answer { uuid: { uuid }})<-[:ANSWERED]-()
-RETURN q, a, COUNT(*) AS responses
+MATCH (q)-[:HAS_ANSWER]->(a:Answer { uuid: { uuid }})
+RETURN q, a
 CQL;
 
         $params = [
@@ -88,7 +85,6 @@ CQL;
         $result = $this->client->run($cql, $params);
         $record = $result->getRecord();
         $data = $record->get('a')->values();
-        $data['responses'] = $record->get('responses');
         $question = new Question($record->get('q')->values());
 
         return new Answer($data, $question);
@@ -331,12 +327,10 @@ CQL;
 
         foreach ($result->getRecords() as $record) {
             $data = $record->get('q')->values();
-            $data['totalResponses'] = $record->get('totalResponses');
             $question = new Question($data);
 
-            foreach ($record->get('answers') as $collection) {
-                $answerData = $collection['answer']->values();
-                $answerData['responses'] = $collection['responses'];
+            foreach ($record->get('answers') as $answer) {
+                $answerData = $answer->values();
                 $question->addAnswer(new Answer($answerData));
             }
 
