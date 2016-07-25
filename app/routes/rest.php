@@ -1,7 +1,6 @@
 <?php
 
-use Hateoas\Representation\CollectionRepresentation;
-use Hateoas\Representation\PaginatedRepresentation;
+use OSMI\Survey\Graph\Helper\Paginator;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -13,26 +12,17 @@ $app->group('/questions', function () {
         $limit = (int) $request->getQueryParam('limit', $pageSize);
 
         $repo = $this->get('analysisRepository');
-        $questions = $repo->findAllQuestions($skip, $limit);
-        $totalQuestions = $repo->countResources('Question');
+        $resources = $repo->findAllQuestions($skip, $limit);
+        $totalResources = $repo->countResources('Question');
 
-        $totalPages = (int) ceil($totalQuestions / $limit);
-
-        $paginated = new PaginatedRepresentation(
-            new CollectionRepresentation(
-                $questions,
-                'questions', // embedded rel
-                'questions'  // xml element name
-            ),
-            $route = 'questions_get_all',
-            $parameters = [],
+        $paginated = Paginator::createPaginatedRepresentation(
             $pageNumber,
             $limit,
-            $totalPages,
-            $pageParameterName = 'page',
-            $limitParameterName = 'limit',
-            $generateAbsoluteUrls = false,
-            $totalQuestions
+            $resources,
+            $totalResources,
+            'questions_get_all',
+            $routeParams = [],
+            'questions'
         );
 
         return $this->get('halResponse')
@@ -56,23 +46,15 @@ $app->group('/questions', function () {
         $repo = $this->get('analysisRepository');
         $resources = $repo->findAllAnswersByQuestion($args['uuid']);
         $totalResources = count($resources);
-        $totalPages = (int) ceil($totalResources / $limit);
 
-        $paginated = new PaginatedRepresentation(
-            new CollectionRepresentation(
-                $resources,
-                'answers', // embedded rel
-                'answers'  // xml element name
-            ),
-            $route = 'question_answers',
-            $parameters = ['uuid' => $args['uuid']],
+        $paginated = Paginator::createPaginatedRepresentation(
             $pageNumber,
             $limit,
-            $totalPages,
-            $pageParameterName = 'page',
-            $limitParameterName = 'limit',
-            $generateAbsoluteUrls = false,
-            $totalResources
+            $resources,
+            $totalResources,
+            'question_answers',
+            $parameters = ['uuid' => $args['uuid']],
+            'answers'
         );
 
         return $this->get('halResponse')
@@ -98,23 +80,15 @@ $app->group('/answers/{uuid}', function () {
         $repo = $this->get('analysisRepository');
         $resources = $repo->findAllRespondentsByAnswer($args['uuid'], $skip, $limit);
         $totalResources = $repo->countRespondentsByAnswer($args['uuid']);
-        $totalPages = (int) ceil($totalResources / $limit);
 
-        $paginated = new PaginatedRepresentation(
-            new CollectionRepresentation(
-                $resources,
-                'respondents', // embedded rel
-                'respondents'  // xml element name
-            ),
-            $route = 'answer_respondents',
-            $parameters = ['uuid' => $args['uuid']],
+        $paginated = Paginator::createPaginatedRepresentation(
             $pageNumber,
             $limit,
-            $totalPages,
-            $pageParameterName = 'page',
-            $limitParameterName = 'limit',
-            $generateAbsoluteUrls = false,
-            $totalResources
+            $resources,
+            $totalResources,
+            'answer_respondents',
+            $parameters = ['uuid' => $args['uuid']],
+            'respondents'
         );
 
         return $this->get('halResponse')
@@ -130,26 +104,17 @@ $app->group('/respondents', function () {
         $limit = (int) $request->getQueryParam('limit', $pageSize);
 
         $repo = $this->get('analysisRepository');
-        $respondents = $repo->findAllRespondents($skip, $limit);
-        $totalQuestions = $repo->countResources('Person');
+        $resources = $repo->findAllRespondents($skip, $limit);
+        $totalResources = $repo->countResources('Person');
 
-        $totalPages = (int) ceil($totalQuestions / $limit);
-
-        $paginated = new PaginatedRepresentation(
-            new CollectionRepresentation(
-                $respondents,
-                'respondents', // embedded rel
-                'respondents'  // xml element name
-            ),
-            $route = 'respondents_get_all',
-            $parameters = [],
+        $paginated = Paginator::createPaginatedRepresentation(
             $pageNumber,
             $limit,
-            $totalPages,
-            $pageParameterName = 'page',
-            $limitParameterName = 'limit',
-            $generateAbsoluteUrls = false,
-            $totalQuestions
+            $resources,
+            $totalResources,
+            'respondents_get_all',
+            $parameters = [],
+            'respondents'
         );
 
         return $this->get('halResponse')
@@ -173,23 +138,15 @@ $app->group('/respondents', function () {
         $repo = $this->get('analysisRepository');
         $resources = $repo->findAllAnswersByRespondent($args['uuid'], $skip, $limit);
         $totalResources = $repo->countAnswersByRespondent($args['uuid']);
-        $totalPages = (int) ceil($totalResources / $limit);
 
-        $paginated = new PaginatedRepresentation(
-            new CollectionRepresentation(
-                $resources,
-                'answers', // embedded rel
-                'answers'  // xml element name
-            ),
-            $route = 'respondent_answers',
-            $parameters = ['uuid' => $args['uuid']],
+        $paginated = Paginator::createPaginatedRepresentation(
             $pageNumber,
             $limit,
-            $totalPages,
-            $pageParameterName = 'page',
-            $limitParameterName = 'limit',
-            $generateAbsoluteUrls = false,
-            $totalResources
+            $resources,
+            $totalResources,
+            'respondent_answers',
+            $parameters = ['uuid' => $args['uuid']],
+            'answers'
         );
 
         return $this->get('halResponse')
