@@ -34,6 +34,13 @@ Hypermedia APIs can be "chatty" due to the need to make requests across multiple
 >
 > Unlike RPC (remote procedure call) APIs, you shouldn't code to the individual endpoints. We (the server) control those and should be able to change them as needed. So don’t code to the URLs. You should code to the link “rel” tags which define the relationships to the current resource. These should not change, though we may introduce new links (and new rels) at any time, so don’t assume they will be in a specific order.
 
+## Grabbing data from Typeform
+
+Example using `httpie`. **We should write a script to do this.**
+```
+http GET https://api.typeform.com/v1/form/Ao6BTw key==<TYPEFORM_API_KEY> completed==true offset==0 > ~/osmi-survey-2016_0000.json
+```
+
 ## Sample Cypher Queries
 
 Single response
@@ -99,6 +106,39 @@ MATCH (q)-[:HAS_ANSWER]->()<-[ra:ANSWERED]-(p)-[:LIVES_IN_COUNTRY]-(c:Country)
 WITH q, c, count(ra) as country_count
 MATCH (q)-[:HAS_ANSWER]->(a:Answer)<-[:ANSWERED]-(p:Person)-[:LIVES_IN_COUNTRY]-(c)
 WITH q, a, c, count(p) as answer_count, country_count
-RETURN q, a.answer, c.name, answer_count, country_count, toString(((toFloat(answer_count) / toFloat(country_count))*100)) as perc
+RETURN q.question, a.answer, c.name, answer_count, country_count, toString(((toFloat(answer_count) / toFloat(country_count))*100)) as perc
 ORDER BY c.name ASC
+
+// Top 10 self diagnoses WITHOUT a corresponding professional diagnosis
+MATCH (selfDiagnosis:Disorder)<-[:SELF_DIAGNOSIS]-(p:Person)
+WHERE NOT (p)-[:PROFESSIONAL_DIAGNOSIS]->()
+RETURN selfDiagnosis.name, COUNT(p) AS diagnoses
+ORDER BY diagnoses DESC
+LIMIT 10;
+
+// Top 10 Diagnoses: Self-diagnoses vs MD-diagnoses
+MATCH (d:Disorder)<-[sd:SELF_DIAGNOSIS]-()
+WITH d, COUNT(sd) AS selfDiagnoses
+MATCH (d)<-[mdd:PROFESSIONAL_DIAGNOSIS]-()
+WITH d, selfDiagnoses, COUNT(mdd) AS mdDiagnoses
+RETURN d.name AS disorder, selfDiagnoses, mdDiagnoses
+// Order by selfDiagnoses or mdDiagnoses, depending on preference
+ORDER BY selfDiagnoses DESC
+LIMIT 10;
+
+// Incidence of self-diagnoses (WITHOUT corresponding MD diagnosis) compared to available 
+// employer provided mental health coverage
+// JOINs: Question to Answer.
+// If ANSWERED, SELF_DIAGNOSIS, and PROFESSIONAL_DIAGNOSIS all represent pivot tables, then:
+//  * Question -> Answer
+//  * Person -> PersonAnswer -> Answer
+//  * Person -> PersonSelfDiagnosis -> Diagnosis
+//  * Person -> PersonProfessionalDiagnosis -> Diagnosis
+// PROFESSIONAL_DIAGNOSIS rel would also likely represent a pivot table
+MATCH (q:Question { field_id: 18065507 })-[:HAS_ANSWER]->(a)<-[:ANSWERED]-(p)-[sd:SELF_DIAGNOSIS]->(d)
+WHERE NOT (p)-[:PROFESSIONAL_DIAGNOSIS]->()
+RETURN a.answer, COUNT(sd) AS selfDiagnoses
+ORDER BY selfDiagnoses DESC
+LIMIT 10;
+
 ```
