@@ -1,6 +1,8 @@
 <?php
 
+use OSMI\Survey\Graph\Enum\Diagnosis;
 use OSMI\Survey\Graph\Helper\Paginator;
+use OSMI\Survey\Graph\Model\Disorder;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -152,4 +154,114 @@ $app->group('/respondents', function () {
         return $this->get('halResponse')
             ->withJson($response, $paginated);
     })->setName('respondent_answers');
+
+    $this->get('/{uuid}/disorders', function (Request $request, Response $response, array $args) {
+        $pageSize = 10;
+        $pageNumber = (int) $request->getQueryParam('page', 1);
+        $skip = $pageSize * ($pageNumber - 1);
+        $limit = (int) $request->getQueryParam('limit', $pageSize);
+
+        $repo = $this->get('analysisRepository');
+        $type = $request->getQueryParam('type', null);
+
+        if ($type !== null) {
+            $type = new Diagnosis($type);
+        }
+
+        $resources = $repo->findDisordersByRespondent(
+            $args['uuid'],
+            $type,
+            $skip,
+            $limit
+        );
+        $totalResources = $repo->countDisordersByRespondent($args['uuid'], $type);
+
+        $paginated = Paginator::createPaginatedRepresentation(
+            $pageNumber,
+            $limit,
+            $resources,
+            $totalResources,
+            'respondent_get_disorders',
+            $parameters = [
+                'uuid' => $args['uuid'],
+                'type' => ($type === null) ? $type : (string) $type,
+            ],
+            'disorders'
+        );
+
+        return $this->get('halResponse')
+            ->withJson($response, $paginated);
+    })->setName('respondent_get_disorders');
+});
+
+$app->group('/disorders', function () {
+    $this->get('', function (Request $request, Response $response, array $args) {
+        $pageSize = 10;
+        $pageNumber = (int) $request->getQueryParam('page', 1);
+        $skip = $pageSize * ($pageNumber - 1);
+        $limit = (int) $request->getQueryParam('limit', $pageSize);
+
+        $repo = $this->get('analysisRepository');
+        $resources = $repo->findAllDisorders($skip, $limit);
+        $totalResources = $repo->countResources('Disorder');
+
+        $paginated = Paginator::createPaginatedRepresentation(
+            $pageNumber,
+            $limit,
+            $resources,
+            $totalResources,
+            'disorders_get_all',
+            $parameters = [],
+            'disorders'
+        );
+
+        return $this->get('halResponse')
+            ->withJson($response, $paginated);
+    })->setName('disorders_get_all');
+
+    $this->get('/{uuid}', function (Request $request, Response $response, array $args) {
+        $repo = $this->get('analysisRepository');
+        $question = $repo->findDisorder($args['uuid']);
+
+        return $this->get('halResponse')
+            ->withJson($response, $question);
+    })->setName('disorders_get_one');
+
+    $this->get('/{uuid}/respondents', function (Request $request, Response $response, array $args) {
+        $pageSize = 10;
+        $pageNumber = (int) $request->getQueryParam('page', 1);
+        $skip = $pageSize * ($pageNumber - 1);
+        $limit = (int) $request->getQueryParam('limit', $pageSize);
+
+        $repo = $this->get('analysisRepository');
+        $type = $request->getQueryParam('type', null);
+
+        if ($type !== null) {
+            $type = new Diagnosis($type);
+        }
+
+        $resources = $repo->findRespondentsByDisorder(
+            $args['uuid'],
+            $type,
+            $skip,
+            $limit
+        );
+        $totalResources = $repo->countRespondentsByDisorder($args['uuid'], $type);
+
+        $paginated = Paginator::createPaginatedRepresentation(
+            $pageNumber,
+            $limit,
+            $resources,
+            $totalResources,
+            'disorder_get_respondents',
+            $parameters = [
+                'uuid' => $args['uuid'],
+                'type' => ($type === null) ? $type : (string) $type,
+            ],
+            'respondents'
+        );
+
+        return $this->get('halResponse')
+            ->withJson($response, $paginated);
+    })->setName('disorder_get_respondents');
 });
