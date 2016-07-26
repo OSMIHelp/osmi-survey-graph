@@ -22,7 +22,7 @@ Either delete after implementation or update.
     - [ ] Optionally you can pass clauses to filter (not implemented)
     - [ ] Response counts based on demographic data for the users who responded (no demographic endpoints are implemented yet)
     - [ ] "What I am imagine is a tool where you could select certain demographics about users, and then see how they responded to certain questions"
-    - [x] "You also might have the capability of saying if they answered this question with this answer, how did they answer another question" (see /answers/{uuid}/respondents and follow `respondents` rel to view list of respondents)
+    - [x] "You also might have the capability of saying if they answered this question with this answer, how did they answer another question" (/questions -> answers -> respondents -> respondent)
 
 ## Queries
 
