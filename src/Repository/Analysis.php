@@ -8,7 +8,9 @@
 namespace OSMI\Survey\Graph\Repository;
 
 use GraphAware\Bolt\Result\Result;
+use OSMI\Survey\Graph\Enum\Diagnosis;
 use OSMI\Survey\Graph\Model\Answer;
+use OSMI\Survey\Graph\Model\Disorder;
 use OSMI\Survey\Graph\Model\Person;
 use OSMI\Survey\Graph\Model\Question;
 
@@ -116,6 +118,136 @@ CQL;
         foreach ($result->records() as $record) {
             $data = $record->get('p')->values();
             $resources[] = new Person($data);
+        }
+
+        return $resources;
+    }
+
+    /**
+     * Find all disorders.
+     *
+     * @return Disorder[]
+     */
+    public function findAllDisorders($skip = 0, $limit = 100)
+    {
+        $cql = <<<CQL
+MATCH (d:Disorder)
+RETURN d
+ORDER BY d.name
+SKIP { skip }
+LIMIT { limit }
+CQL;
+
+        $params = [
+            'skip' => $skip,
+            'limit' => $limit,
+        ];
+
+        $result = $this->client->run($cql, $params);
+        $resources = [];
+
+        foreach ($result->records() as $record) {
+            $data = $record->get('d')->values();
+            $resources[] = new Disorder($data);
+        }
+
+        return $resources;
+    }
+
+    /**
+     * Finds single Disorder.
+     *
+     * @return Disorder
+     */
+    public function findDisorder($uuid)
+    {
+        $cql = <<<CQL
+MATCH (d:Disorder { uuid: { uuid }})
+RETURN d
+CQL;
+
+        $params = [
+            'uuid' => $uuid,
+        ];
+
+        $result = $this->client->run($cql, $params);
+
+        return new Disorder($result->getRecord()->get('d')->values());
+    }
+
+    /**
+     * Finds respondents diagnosed with specified disorder and type of diagnosis.
+     *
+     * @param string    $uuid  Disorder UUID
+     * @param Diagnosis $type  Diagnosis type
+     * @param int       $skip
+     * @param int       $limit
+     *
+     * @return Person[]
+     */
+    public function findRespondentsByDisorder($uuid, Diagnosis $type = null, $skip = 0, $limit = 100)
+    {
+        $format = <<<FORMAT
+MATCH (d:Disorder { uuid: { uuid }})<-[:%s]-(p)
+RETURN DISTINCT p, d
+ORDER BY p.token
+SKIP { skip }
+LIMIT { limit }
+FORMAT;
+
+        $params = [
+            'uuid' => $uuid,
+            'skip' => $skip,
+            'limit' => $limit,
+        ];
+
+        $rel = ($type === null) ? implode('|', Diagnosis::keys()) : $type->getKey();
+        $cql = sprintf($format, $rel);
+        $result = $this->client->run($cql, $params);
+        $resources = [];
+
+        foreach ($result->records() as $record) {
+            $data = $record->get('p')->values();
+            $resources[] = new Person($data);
+        }
+
+        return $resources;
+    }
+
+    /**
+     * Finds respondent diagnoses
+     *
+     * @param string    $uuid  Person UUID
+     * @param Diagnosis $type  Diagnosis type
+     * @param int       $skip
+     * @param int       $limit
+     *
+     * @return Disorder[]
+     */
+    public function findDisordersByRespondent($uuid, Diagnosis $type = null, $skip = 0, $limit = 100)
+    {
+        $format = <<<FORMAT
+MATCH (p:Person { uuid: { uuid }})-[:%s]->(d)
+RETURN DISTINCT d, p
+ORDER BY d.name
+SKIP { skip }
+LIMIT { limit }
+FORMAT;
+
+        $params = [
+            'uuid' => $uuid,
+            'skip' => $skip,
+            'limit' => $limit,
+        ];
+
+        $rel = ($type === null) ? implode('|', Diagnosis::keys()) : $type->getKey();
+        $cql = sprintf($format, $rel);
+        $result = $this->client->run($cql, $params);
+        $resources = [];
+
+        foreach ($result->records() as $record) {
+            $data = $record->get('d')->values();
+            $resources[] = new Disorder($data);
         }
 
         return $resources;
@@ -266,6 +398,58 @@ CQL;
         $result = $this->client->run($cql, $params);
 
         return (int) $result->getRecord()->get('respondents');
+    }
+
+    /**
+     * How many respondents are diagnosed with the specified disorder?
+     *
+     * @param string    $uuid Disorder UUID
+     * @param Diagnosis $type Diagnosis type
+     *
+     * @return int
+     */
+    public function countRespondentsByDisorder($uuid, Diagnosis $type = null)
+    {
+        $format = <<<FORMAT
+MATCH (d:Disorder { uuid: { uuid }})<-[:%s]-(p)
+RETURN COUNT(DISTINCT p) AS count;
+FORMAT;
+
+        $params = [
+            'uuid' => $uuid,
+        ];
+
+        $rel = ($type === null) ? implode('|', Diagnosis::keys()) : $type->getKey();
+        $cql = sprintf($format, $rel);
+        $result = $this->client->run($cql, $params);
+
+        return (int) $result->getRecord()->get('count');
+    }
+
+    /**
+     * How many total disorders has the respondent been diagnosed with?
+     *
+     * @param string    $uuid Person UUID
+     * @param Diagnosis $type Diagnosis type
+     *
+     * @return int
+     */
+    public function countDisordersByRespondent($uuid, Diagnosis $type = null)
+    {
+        $format = <<<FORMAT
+MATCH (p:Person { uuid: { uuid }})-[:%s]->(d)
+RETURN COUNT(DISTINCT d) AS count;
+FORMAT;
+
+        $params = [
+            'uuid' => $uuid,
+        ];
+
+        $rel = ($type === null) ? implode('|', Diagnosis::keys()) : $type->getKey();
+        $cql = sprintf($format, $rel);
+        $result = $this->client->run($cql, $params);
+
+        return (int) $result->getRecord()->get('count');
     }
 
     /**
