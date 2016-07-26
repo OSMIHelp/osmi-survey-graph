@@ -15,10 +15,15 @@ if (!defined('APP_MODE')) {
     define('APP_MODE', $mode);
 }
 
-date_default_timezone_set('UTC');
-error_reporting(getenv('PHP_ERROR_REPORTING'));
-ini_set('display_errors', getenv('PHP_DISPLAY_ERRORS'));
-ini_set('display_startup_errors', getenv('PHP_DISPLAY_STARTUP_ERRORS'));
+if (!defined('SLIM_MODE')) {
+    $mode = getenv('SLIM_MODE') ? getenv('SLIM_MODE') : 'production';
+    define('SLIM_MODE', $mode);
+}
 
-$container = new \Pimple\Container();
-$container->register(new \OSMI\Survey\Graph\DependencyInjection\OsmiSurveyGraphProvider());
+date_default_timezone_set('UTC');
+error_reporting(getenv('OSMI_ERROR_REPORTING'));
+ini_set('display_errors', getenv('OSMI_DISPLAY_ERRORS'));
+ini_set('display_startup_errors', getenv('OSMI_DISPLAY_STARTUP_ERRORS'));
+
+$settings = require_once APPLICATION_PATH . '/app/settings.php';
+$container = require_once APPLICATION_PATH . '/app/dependencies.php';

@@ -7,8 +7,12 @@
  */
 namespace OSMI\Survey\Graph\Repository;
 
-use GraphAware\Neo4j\Client\Formatter\Result;
-use OSMI\Survey\Graph\Response;
+use GraphAware\Bolt\Result\Result;
+use OSMI\Survey\Graph\Enum\Diagnosis;
+use OSMI\Survey\Graph\Model\Answer;
+use OSMI\Survey\Graph\Model\Disorder;
+use OSMI\Survey\Graph\Model\Person;
+use OSMI\Survey\Graph\Model\Question;
 
 /**
  * Performs OSMI survey data analysis.
@@ -16,53 +20,42 @@ use OSMI\Survey\Graph\Response;
 class Analysis extends Neo4j
 {
     /**
-     * How many people responded to the survey?
+     * Finds single Question.
      *
-     * @return int
+     * @return Question
      */
-    public function countRespondents()
-    {
-        $result = $this->client->run('MATCH (n:Person) RETURN COUNT(n) AS respondents;');
-
-        return (int) $result->getRecord()->get('respondents');
-    }
-
-    /**
-     * Gets a the response to a single question.
-     *
-     * @param string $questionId
-     *
-     * @return array
-     */
-    public function getSingleReponse($questionId)
+    public function findQuestion($uuid)
     {
         $cql = <<<CQL
-MATCH (q:Question { id: { questionId }})-[:HAS_ANSWER]->(a)<-[:ANSWERED]-()
-WITH q, a, COUNT(*) AS responses
-RETURN q.question AS question, COLLECT({ answer: a.answer , responses: responses }) AS answers;
+MATCH (q:Question { uuid: { uuid }})-[:HAS_ANSWER]->(a)
+RETURN q, COLLECT(a) AS answers
 CQL;
 
         $params = [
-            'questionId' => $questionId,
+            'uuid' => $uuid,
         ];
 
         $result = $this->client->run($cql, $params);
 
-        return $this->buildSingleResponse($result);
+        return $this->buildSingleQuestion($result);
     }
 
-    public function getResponses($skip = 0, $limit = 200)
+    /**
+     * Find all Questions.
+     *
+     * @return Question[]
+     */
+    public function findAllQuestions($skip = 0, $limit = 100)
     {
+        $questions = [];
+
         $cql = <<<CQL
-MATCH (q:Question)
-WITH q
+MATCH (q:Question)-[:HAS_ANSWER]->(a)
+WITH q, COLLECT(a) AS answers
+RETURN q, answers
 ORDER BY q.order
 SKIP { skip }
 LIMIT { limit }
-MATCH (q)-[:HAS_ANSWER]->(a)<-[:ANSWERED]-()
-WITH q, a, COUNT(*) AS responses
-RETURN q.order AS order, q.question AS question, COLLECT({ answer: a.answer , responses: responses }) AS answers
-ORDER BY q.order;
 CQL;
 
         $params = [
@@ -72,31 +65,465 @@ CQL;
 
         $result = $this->client->run($cql, $params);
 
-        return $this->buildResponses($result);
+        return $this->buildQuestions($result);
     }
 
-    private function buildSingleResponse(Result $result)
+    /**
+     * Finds single Answer.
+     *
+     * @return Answer
+     */
+    public function findAnswer($uuid)
     {
-        $responses = $this->buildResponses($result);
+        $cql = <<<CQL
+MATCH (q)-[:HAS_ANSWER]->(a:Answer { uuid: { uuid }})
+RETURN q, a
+CQL;
 
-        if (empty($responses)) {
-            return;
+        $params = [
+            'uuid' => $uuid,
+        ];
+
+        $result = $this->client->run($cql, $params);
+        $record = $result->getRecord();
+        $data = $record->get('a')->values();
+        $question = new Question($record->get('q')->values());
+
+        return new Answer($data, $question);
+    }
+
+    /**
+     * Find all respondents.
+     *
+     * @return Person[]
+     */
+    public function findAllRespondents($skip = 0, $limit = 100)
+    {
+        $cql = <<<CQL
+MATCH (p:Person)
+RETURN p
+ORDER BY p.token
+SKIP { skip }
+LIMIT { limit }
+CQL;
+
+        $params = [
+            'skip' => $skip,
+            'limit' => $limit,
+        ];
+
+        $result = $this->client->run($cql, $params);
+        $resources = [];
+
+        foreach ($result->records() as $record) {
+            $data = $record->get('p')->values();
+            $resources[] = new Person($data);
         }
 
-        return $responses[0];
+        return $resources;
     }
 
-    private function buildResponses(Result $result)
+    /**
+     * Find all disorders.
+     *
+     * @return Disorder[]
+     */
+    public function findAllDisorders($skip = 0, $limit = 100)
     {
-        $responses = [];
+        $cql = <<<CQL
+MATCH (d:Disorder)
+RETURN d
+ORDER BY d.name
+SKIP { skip }
+LIMIT { limit }
+CQL;
 
-        foreach ($result->getRecords() as $record) {
-            $responses[] = new Response(
-                $record->get('question'),
-                $record->get('answers')
+        $params = [
+            'skip' => $skip,
+            'limit' => $limit,
+        ];
+
+        $result = $this->client->run($cql, $params);
+        $resources = [];
+
+        foreach ($result->records() as $record) {
+            $data = $record->get('d')->values();
+            $resources[] = new Disorder($data);
+        }
+
+        return $resources;
+    }
+
+    /**
+     * Finds single Disorder.
+     *
+     * @return Disorder
+     */
+    public function findDisorder($uuid)
+    {
+        $cql = <<<CQL
+MATCH (d:Disorder { uuid: { uuid }})
+RETURN d
+CQL;
+
+        $params = [
+            'uuid' => $uuid,
+        ];
+
+        $result = $this->client->run($cql, $params);
+
+        return new Disorder($result->getRecord()->get('d')->values());
+    }
+
+    /**
+     * Finds respondents diagnosed with specified disorder and type of diagnosis.
+     *
+     * @param string    $uuid  Disorder UUID
+     * @param Diagnosis $type  Diagnosis type
+     * @param int       $skip
+     * @param int       $limit
+     *
+     * @return Person[]
+     */
+    public function findRespondentsByDisorder($uuid, Diagnosis $type = null, $skip = 0, $limit = 100)
+    {
+        $format = <<<FORMAT
+MATCH (d:Disorder { uuid: { uuid }})<-[:%s]-(p)
+RETURN DISTINCT p, d
+ORDER BY p.token
+SKIP { skip }
+LIMIT { limit }
+FORMAT;
+
+        $params = [
+            'uuid' => $uuid,
+            'skip' => $skip,
+            'limit' => $limit,
+        ];
+
+        $rel = ($type === null) ? implode('|', Diagnosis::keys()) : $type->getKey();
+        $cql = sprintf($format, $rel);
+        $result = $this->client->run($cql, $params);
+        $resources = [];
+
+        foreach ($result->records() as $record) {
+            $data = $record->get('p')->values();
+            $resources[] = new Person($data);
+        }
+
+        return $resources;
+    }
+
+    /**
+     * Finds respondent diagnoses
+     *
+     * @param string    $uuid  Person UUID
+     * @param Diagnosis $type  Diagnosis type
+     * @param int       $skip
+     * @param int       $limit
+     *
+     * @return Disorder[]
+     */
+    public function findDisordersByRespondent($uuid, Diagnosis $type = null, $skip = 0, $limit = 100)
+    {
+        $format = <<<FORMAT
+MATCH (p:Person { uuid: { uuid }})-[:%s]->(d)
+RETURN DISTINCT d, p
+ORDER BY d.name
+SKIP { skip }
+LIMIT { limit }
+FORMAT;
+
+        $params = [
+            'uuid' => $uuid,
+            'skip' => $skip,
+            'limit' => $limit,
+        ];
+
+        $rel = ($type === null) ? implode('|', Diagnosis::keys()) : $type->getKey();
+        $cql = sprintf($format, $rel);
+        $result = $this->client->run($cql, $params);
+        $resources = [];
+
+        foreach ($result->records() as $record) {
+            $data = $record->get('d')->values();
+            $resources[] = new Disorder($data);
+        }
+
+        return $resources;
+    }
+
+    /**
+     * Find all answers belonging to specified question.
+     *
+     * @param string $uuid Question UUID
+     *
+     * @return Answer[]
+     */
+    public function findAllAnswersByQuestion($uuid)
+    {
+        $cql = <<<CQL
+MATCH (q:Question { uuid: { uuid }})-[:HAS_ANSWER]->(a)
+RETURN q, a;
+CQL;
+
+        $params = [
+            'uuid' => $uuid,
+        ];
+
+        $result = $this->client->run($cql, $params);
+        $resources = [];
+        $question = null;
+
+        foreach ($result->records() as $record) {
+            if ($question === null) {
+                $question = new Question($record->get('q')->values());
+            }
+
+            $data = $record->get('a')->values();
+            $resources[] = new Answer($data, $question);
+        }
+
+        return $resources;
+    }
+
+    /**
+     * Find all respondents who responded to a question with the given answer.
+     *
+     * @return Person[]
+     */
+    public function findAllRespondentsByAnswer($uuid, $skip = 0, $limit = 100)
+    {
+        $cql = <<<CQL
+MATCH (a:Answer { uuid: { uuid }})<-[:ANSWERED]-(p)
+RETURN p
+ORDER BY p.token
+SKIP { skip }
+LIMIT { limit }
+CQL;
+
+        $params = [
+            'uuid' => $uuid,
+            'skip' => $skip,
+            'limit' => $limit,
+        ];
+
+        $result = $this->client->run($cql, $params);
+        $resources = [];
+
+        foreach ($result->records() as $record) {
+            $data = $record->get('p')->values();
+            $resources[] = new Person($data);
+        }
+
+        return $resources;
+    }
+
+    /**
+     * Find all answers by respondent.
+     *
+     * @return Answer[]
+     */
+    public function findAllAnswersByRespondent($uuid, $skip = 0, $limit = 100)
+    {
+        $cql = <<<CQL
+MATCH (p:Person { uuid: { uuid }})-[:ANSWERED]->(a)<-[:HAS_ANSWER]-(q)
+RETURN a, q
+ORDER BY a.hash
+SKIP { skip }
+LIMIT { limit }
+CQL;
+
+        $params = [
+            'uuid' => $uuid,
+            'skip' => $skip,
+            'limit' => $limit,
+        ];
+
+        $result = $this->client->run($cql, $params);
+        $resources = [];
+
+        foreach ($result->records() as $record) {
+            $data = $record->get('a')->values();
+            $resources[] = new Answer(
+                $data,
+                new Question($record->get('q')->values())
             );
         }
 
-        return $responses;
+        return $resources;
+    }
+
+    /**
+     * How many answers did this repondent provide?
+     *
+     * @param string $uuid Person uuid
+     *
+     * @return int
+     */
+    public function countAnswersByRespondent($uuid)
+    {
+        $cql = <<<CQL
+MATCH (p:Person { uuid: { uuid }})-[:ANSWERED]->(a)
+RETURN COUNT(a) AS count;
+CQL;
+
+        $params = [
+            'uuid' => $uuid,
+        ];
+
+        $result = $this->client->run($cql, $params);
+
+        return (int) $result->getRecord()->get('count');
+    }
+
+    /**
+     * How many respondents replied with this answer.
+     *
+     * @param string $uuid Answer uuid
+     *
+     * @return int
+     */
+    public function countRespondentsByAnswer($uuid)
+    {
+        $cql = <<<CQL
+MATCH (a:Answer { uuid: { uuid }})<-[:ANSWERED]-(p)
+RETURN COUNT(p) AS respondents;
+CQL;
+
+        $params = [
+            'uuid' => $uuid,
+        ];
+
+        $result = $this->client->run($cql, $params);
+
+        return (int) $result->getRecord()->get('respondents');
+    }
+
+    /**
+     * How many respondents are diagnosed with the specified disorder?
+     *
+     * @param string    $uuid Disorder UUID
+     * @param Diagnosis $type Diagnosis type
+     *
+     * @return int
+     */
+    public function countRespondentsByDisorder($uuid, Diagnosis $type = null)
+    {
+        $format = <<<FORMAT
+MATCH (d:Disorder { uuid: { uuid }})<-[:%s]-(p)
+RETURN COUNT(DISTINCT p) AS count;
+FORMAT;
+
+        $params = [
+            'uuid' => $uuid,
+        ];
+
+        $rel = ($type === null) ? implode('|', Diagnosis::keys()) : $type->getKey();
+        $cql = sprintf($format, $rel);
+        $result = $this->client->run($cql, $params);
+
+        return (int) $result->getRecord()->get('count');
+    }
+
+    /**
+     * How many total disorders has the respondent been diagnosed with?
+     *
+     * @param string    $uuid Person UUID
+     * @param Diagnosis $type Diagnosis type
+     *
+     * @return int
+     */
+    public function countDisordersByRespondent($uuid, Diagnosis $type = null)
+    {
+        $format = <<<FORMAT
+MATCH (p:Person { uuid: { uuid }})-[:%s]->(d)
+RETURN COUNT(DISTINCT d) AS count;
+FORMAT;
+
+        $params = [
+            'uuid' => $uuid,
+        ];
+
+        $rel = ($type === null) ? implode('|', Diagnosis::keys()) : $type->getKey();
+        $cql = sprintf($format, $rel);
+        $result = $this->client->run($cql, $params);
+
+        return (int) $result->getRecord()->get('count');
+    }
+
+    /**
+     * Finds single respondent.
+     *
+     * @return Person
+     */
+    public function findRespondent($uuid)
+    {
+        $cql = <<<CQL
+MATCH (p:Person { uuid: { uuid }})
+OPTIONAL MATCH (p)-[:LIVES_IN_COUNTRY]->(countryResidence)
+OPTIONAL MATCH (p)-[:LIVES_IN_STATE]->(stateResidence)
+OPTIONAL MATCH (p)-[:WORKS_IN]->(stateWork)
+OPTIONAL MATCH (p)-[:WORKS_AS]->(profession)
+RETURN p, countryResidence, stateResidence, stateWork, profession
+CQL;
+
+        $params = [
+            'uuid' => $uuid,
+        ];
+
+        $result = $this->client->run($cql, $params);
+        $record = $result->getRecord();
+        $data = $record->get('p')->values();
+
+        $respondent = new Person($data);
+
+        return $respondent;
+    }
+
+    /**
+     * How many named resources exist.
+     *
+     * @return string $name Resource (node) name
+     */
+    public function countResources($name)
+    {
+        $cql = sprintf(
+            'MATCH (n:%s) RETURN COUNT(n) AS count;',
+            ucfirst(strtolower($name))
+        );
+        $result = $this->client->run($cql);
+
+        return (int) $result->getRecord()->get('count');
+    }
+
+    private function buildSingleQuestion(Result $result)
+    {
+        $resources = $this->buildQuestions($result);
+
+        if (empty($resources)) {
+            return;
+        }
+
+        return $resources[0];
+    }
+
+    private function buildQuestions(Result $result)
+    {
+        $resources = [];
+
+        foreach ($result->getRecords() as $record) {
+            $data = $record->get('q')->values();
+            $question = new Question($data);
+
+            foreach ($record->get('answers') as $answer) {
+                $answerData = $answer->values();
+                $question->addAnswer(new Answer($answerData));
+            }
+
+            $resources[] = $question;
+        }
+
+        return $resources;
     }
 }

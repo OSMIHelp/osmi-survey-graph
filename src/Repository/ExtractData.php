@@ -41,6 +41,7 @@ class ExtractData extends Neo4j
         $this->client->run($this->getCreateCurrentDiagnosis());
         $this->client->run($this->getCreateSelfDiagnosis());
         $this->client->run($this->getCreateProfessionalDiagnosis());
+        $this->client->run($this->getSetQuestionAndAnswerResponseCounts());
     }
 
     /**
@@ -345,5 +346,20 @@ CQL;
             'Question',
             'field_id'
         ));
+    }
+
+    /**
+     * Sets response counts on Question and Answer nodes.
+     */
+    public function getSetQuestionAndAnswerResponseCounts()
+    {
+        return <<<CQL
+MATCH (q:Question)-[:HAS_ANSWER]->(a)<-[:ANSWERED]-()
+WITH q, a, COUNT(*) AS responses
+SET a.responses = toInt(responses)
+WITH q, COLLECT({ answer: a.hash, responses: responses }) AS answers
+WITH q, REDUCE(totalResponses = 0, n IN answers | totalResponses + n.responses) AS totalResponses
+SET q.responses = toInt(totalResponses)
+CQL;
     }
 }

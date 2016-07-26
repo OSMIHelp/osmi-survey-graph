@@ -3,6 +3,7 @@
 require_once './vendor/autoload.php';
 
 $finder = \Symfony\CS\Finder\DefaultFinder::create()
+    ->in('app/')
     ->in('src/')
     ->in('scripts/');
 
