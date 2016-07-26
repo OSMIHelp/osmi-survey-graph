@@ -19,6 +19,10 @@ $app->get('/', function (Request $request, Response $response, array $args) {
                 'href' => '/respondents',
                 'title' => 'Survey respondents',
             ],
+            'disorders' => [
+                'href' => '/disorders',
+                'title' => 'Disorders identified in survey',
+            ],
         ],
     ];
 
