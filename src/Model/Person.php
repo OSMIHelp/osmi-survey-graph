@@ -23,6 +23,41 @@ use JMS\Serializer\Annotation as Serializer;
  *          }
  *      )
  *  )
+ *
+ * @Hateoas\Relation("all_diagnoses", href = @Hateoas\Route(
+ *          "respondent_get_disorders",
+ *          parameters = {
+ *              "uuid" = "expr(object.getUuid())"
+ *          }
+ *      )
+ *  )
+ *
+ * @Hateoas\Relation("self_diagnoses", href = @Hateoas\Route(
+ *          "respondent_get_disorders",
+ *          parameters = {
+ *              "uuid" = "expr(object.getUuid())",
+ *              "type" = "self"
+ *          }
+ *      )
+ *  )
+ *
+ * @Hateoas\Relation("professional_diagnoses", href = @Hateoas\Route(
+ *          "respondent_get_disorders",
+ *          parameters = {
+ *              "uuid" = "expr(object.getUuid())",
+ *              "type" = "professional"
+ *          }
+ *      )
+ *  )
+ *
+ * @Hateoas\Relation("current_diagnoses", href = @Hateoas\Route(
+ *          "respondent_get_disorders",
+ *          parameters = {
+ *              "uuid" = "expr(object.getUuid())",
+ *              "type" = "current"
+ *          }
+ *      )
+ *  )
  */
 class Person extends AbstractModel
 {
