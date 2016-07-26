@@ -5,3 +5,4 @@ neo4j-community-*/
 .env
 *.zip
 .idea/
+!/public/browser/vendor/
