@@ -15,14 +15,14 @@ Initial setup:
 These are very rough notes describing the desired functionality of the API.
 Either delete after implementation or update.
 
-- [x] Get all questions
-- [x] Get all respondents
-- [x] Get answers based on how people answered question X (find answer, follow `respondents` rel)
-* here's the question, and I want to get the answers for that question
-    * optionally you can pass clauses to filter.
-    * Response counts based on demographic data for the users who responded
-    * "What I am imagine is a tool where you could select certain demographics about users, and then see how they responded to certain questions"
-    * "You also might have the capability of saying if they answered this question with this answer, how did they answer another question"
+- [x] Get all questions (see /questions)
+- [x] Get all respondents (see /respondents)
+- [x] Get answers based on how people answered question X (find answer, follow `respondents` rel, all respondents have and `answers` rel)
+- [x] Here's the question, and I want to get the answers for that question (/questions/{uuid} endpoint returns specified question, `Answers` are linked and embedded)
+    - [ ] Optionally you can pass clauses to filter (not implemented)
+    - [ ] Response counts based on demographic data for the users who responded (no demographic endpoints are implemented yet)
+    - [ ] "What I am imagine is a tool where you could select certain demographics about users, and then see how they responded to certain questions"
+    - [x] "You also might have the capability of saying if they answered this question with this answer, how did they answer another question" (see /answers/{uuid}/respondents and follow `respondents` rel to view list of respondents)
 
 ## Queries
 
