@@ -24,7 +24,17 @@ Either delete after implementation or update.
     - [ ] "What I am imagine is a tool where you could select certain demographics about users, and then see how they responded to certain questions"
     - [x] "You also might have the capability of saying if they answered this question with this answer, how did they answer another question" (/questions -> answers -> respondents -> respondent)
 
-## Queries
+## Consuming the API: Quick Tips
+
+Hypermedia APIs can be "chatty" due to the need to make requests across multiple rels. ETags are provided to aid in caching. Please see the [Some background for those not familiar with using Hypermedia APIs](https://api.foxycart.com/docs) section of the FoxyCart docs for some high level info about utilizing caching via ETags to efficiently consume hypermedia APIs:
+
+> One of the keys to a successful Hypermedia API is proper use of caching (all clients should take advantage of local caches and ETags). If you’re not familiar with hypermedia APIs, things may seem a bit “chatty” at first, but that’s where your client’s local cache comes into play.
+>
+> Start with the home page and cache it. On the next request (to that or any resource you've already visited), be sure to send that ETag along with an If-None-Match header so you can use your cache entry in the event of a 304 Not Modified response. From there, use hypermedia to navigate to related resources using the links either in the header or the body of the response.
+>
+> Unlike RPC (remote procedure call) APIs, you shouldn't code to the individual endpoints. We (the server) control those and should be able to change them as needed. So don’t code to the URLs. You should code to the link “rel” tags which define the relationships to the current resource. These should not change, though we may introduce new links (and new rels) at any time, so don’t assume they will be in a specific order.
+
+## Sample Cypher Queries
 
 Single response
 ```
