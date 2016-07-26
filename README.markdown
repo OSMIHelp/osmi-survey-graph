@@ -1,14 +1,31 @@
 # 2016 OSMI Survey Graph
 
-Initial setup:
+## Installing and Running
 
 * Copy `.env.example`
-* Update the `GRAPH_URL`
+* Update settings as appropriate for your environment
 * Ensure an instance of Neo4j 3.x is running (Bolt protocol)
 * Run `php -f scripts/load-data.php`
 * Start the web server: `./server.sh`
 * Visit [http://localhost:8888/browser/browser.html](http://localhost:8888/browser/browser.html)
 * Explore the API using the HAL browser
+
+### Installing the GraphAware UUID Plugin
+
+* Download the [GraphAware UUID](http://products.graphaware.com/download/uuid/latest) component
+* Download the [GraphAware Framework](http://products.graphaware.com/download/framework-server-community/latest)
+* Copy both jars into `/path/to/neo4j/plugins`
+* Add the following the the bottom of your `/path/to/neo4j/conf/neo4j.conf` and restart Neo4j
+
+```
+com.graphaware.runtime.enabled=true
+
+#UIDM becomes the module ID:
+com.graphaware.module.UIDM.1=com.graphaware.module.uuid.UuidBootstrapper
+
+#optional, default is uuid:
+com.graphaware.module.UIDM.uuidProperty=uuid
+```
 
 ## API Endpoints
 
