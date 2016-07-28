@@ -215,7 +215,7 @@ FORMAT;
     }
 
     /**
-     * Finds respondent diagnoses
+     * Finds respondent diagnoses.
      *
      * @param string    $uuid  Person UUID
      * @param Diagnosis $type  Diagnosis type
