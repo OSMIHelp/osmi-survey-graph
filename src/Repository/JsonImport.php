@@ -14,16 +14,17 @@ class JsonImport extends Neo4j
 {
     public function import(array $data)
     {
-        $this->processQuestions($data['questions']);
-        $this->processResponses($data['responses']);
+        $this->importQuestions($data['questions']);
+        $this->importResponses($data['responses']);
     }
 
-    private function processQuestions(array $questions)
+    private function importQuestions(array $data)
     {
-        $stack = $this->client->stack();
+        $groups = [];
+        $questions = [];
         $order = 0;
 
-        foreach ($questions as $question) {
+        foreach ($data as $question) {
             // Skip statements
             if (strpos($question['id'], 'statement') !== false) {
                 continue;
@@ -33,7 +34,7 @@ class JsonImport extends Neo4j
 
             // Groups are their own nodes
             if (strpos($question['id'], 'group') !== false) {
-                $stack->push($this->getCreateGroup(), $question);
+                $groups[] = $question;
                 continue;
             }
 
@@ -42,21 +43,26 @@ class JsonImport extends Neo4j
             }
 
             $question['order'] = $order;
-            $stack->push($this->getCreateQuestion(), $question);
+            $questions[] = $question;
             $order++;
         }
+
+        $stack = $this->client->stack();
+        $stack->push($this->getCreateGroups(), ['groups' => $groups]);
+        $stack->push($this->getCreateQuestions(), ['questions' => $questions]);
 
         $this->client->runStack($stack);
     }
 
-    private function processResponses(array $responses)
+    private function importResponses(array $responses)
     {
-        foreach ($responses as $response) {
-            $stack = $this->client->stack();
+        $people = [];
+        $answers = [];
 
+        foreach ($responses as $response) {
             $metadata = $this->processMetadata($response['metadata']);
             $params = ['token' => $response['token'], 'props' => $metadata];
-            $stack->push($this->getCreatePerson(), $params);
+            $people[] = $params;
 
             foreach ($response['answers'] as $questionId => $answer) {
                 if (strlen(trim($answer)) === 0) {
@@ -72,12 +78,14 @@ class JsonImport extends Neo4j
                     'token' => $response['token'],
                 ];
 
-                $stack->push($this->getCreateAnswer(), $params);
+                $answers[] = $params;
             }
-
-            $this->client->runStack($stack);
-            $stack = null;
         }
+
+        $stack = $this->client->stack();
+        $stack->push($this->getCreateAnswers(), ['answers' => $answers]);
+        $stack->push($this->getCreatePeople(), ['people' => $people]);
+        $this->client->runStack($stack);
     }
 
     private function processMetadata(array $metadata)
@@ -103,49 +111,57 @@ class JsonImport extends Neo4j
         return $metadata;
     }
 
-    public function getCreateGroup()
+    public function getCreateGroups()
     {
         return <<<CQL
-MERGE (g:Group { id: { id }})
+UNWIND { groups } AS g
+WITH g
+MERGE (group:Group { id: g.id })
 ON CREATE SET
-    g.description = { question },
-    g.field_id = { field_id }
+    group.description = g.question,
+    group.field_id = g.field_id
 CQL;
     }
 
-    public function getCreateQuestion()
+    public function getCreateQuestions()
     {
         return <<<CQL
-MERGE (q:Question { id: { id }})
-ON CREATE SET
-    q.question = { question },
-    q.field_id = { field_id },
-    q.group = { group },
-    q.order = { order }
+UNWIND { questions } AS q
 WITH q
-MATCH (g:Group { id: { group }})
-MERGE (g)-[:CONTAINS]->(q);
+MERGE (question:Question { id: q.id })
+ON CREATE SET
+    question.question = q.question,
+    question.field_id = q.field_id,
+    question.group = q.group,
+    question.order = q.order
+WITH question, q
+MATCH (group:Group { id: q.group })
+MERGE (group)-[:CONTAINS]->(question);
 CQL;
     }
 
-    public function getCreateAnswer()
+    public function getCreateAnswers()
     {
         return <<<CQL
-MERGE (a:Answer { hash: { hash }})
-ON CREATE SET a.answer = { answer }
+UNWIND { answers } AS a
 WITH a
-MATCH (q:Question { id: { questionId }})
-MATCH (p:Person { token: { token }})
-MERGE (q)-[:HAS_ANSWER]->(a)
-MERGE (p)-[:ANSWERED]->(a)
+MERGE (answer:Answer { hash: a.hash })
+ON CREATE SET answer.answer = a.answer
+WITH answer, a
+MATCH (q:Question { id: a.questionId })
+MATCH (p:Person { token: a.token })
+MERGE (q)-[:HAS_ANSWER]->(answer)
+MERGE (p)-[:ANSWERED]->(answer)
 CQL;
     }
 
-    public function getCreatePerson()
+    public function getCreatePeople()
     {
         return <<<CQL
-MERGE (p:Person { token: { token }})
-ON CREATE SET p += { props }
+UNWIND { people } AS p
+WITH p
+MERGE (person:Person { token: p.token })
+ON CREATE SET person += p.props
 CQL;
     }
 }
