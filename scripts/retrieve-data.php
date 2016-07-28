@@ -6,7 +6,7 @@ $filename = dirname(__DIR__) . '/data/osmi-survey-2016_' . time() . '.json';
 
 echo "Retrieving completed responses...\n";
 $surveyData = getSurveyData();
-$surveyJson = json_encode($surveyData, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES);
+$surveyJson = json_encode($surveyData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 
 echo "Writing to file {$filename}...\n";
 file_put_contents($filename, $surveyJson);
@@ -30,8 +30,8 @@ function getSurveyData($limit = 100)
             'query' => [
                 'key' => $apiKey,
                 'limit' => $limit,
-                'offset' => $offset
-            ]
+                'offset' => $offset,
+            ],
         ]);
 
         $bodyContent = json_decode($response->getBody(), true);
