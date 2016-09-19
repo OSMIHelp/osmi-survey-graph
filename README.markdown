@@ -63,7 +63,7 @@ http GET https://api.typeform.com/v1/form/Ao6BTw key==<TYPEFORM_API_KEY> complet
 Single response
 ```
 MATCH (q:Question { id: "list_18065482_choice" })-[:HAS_ANSWER]->(a)<-[:ANSWERED]-(p)
-RETURN a.answer AS answer, COUNT(*) AS responses
+RETURN q.question AS question, a.answer AS answer, COUNT(*) AS responses
 ORDER BY responses DESC;
 ```
 
