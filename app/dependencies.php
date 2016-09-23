@@ -35,7 +35,9 @@ $container['logger'] = function ($c) {
     $logger = new \Monolog\Logger($settings['name']);
     $logger->pushProcessor(new \Monolog\Processor\UidProcessor());
     $logger->pushProcessor(new \Monolog\Processor\IntrospectionProcessor());
-    $logger->pushHandler(new \Monolog\Handler\StreamHandler($settings['path'], \Monolog\Logger::DEBUG));
+    $logger->pushHandler(
+        new \Monolog\Handler\StreamHandler($settings['path'], \Monolog\Logger::DEBUG)
+    );
 
     return $logger;
 };

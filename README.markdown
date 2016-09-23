@@ -2,15 +2,33 @@
 
 ## Installing and Running
 
-* Copy `.env.example`
-* Update settings as appropriate for your environment
+### Using Docker
+
+* Clone repo
+* Copy `.env.example` to `.env`
+* Update `.env` settings as appropriate for your environment
+* `composer install`
+* Run `docker-compose up -d`
+* Run `php -f scripts/load-data.php`
+    * If data load fails, run it again
+* Visit [http://localhost/browser/browser.html](http://localhost/browser/browser.html)
+* Explore the API using the HAL browser
+
+### Not using Docker
+
+* Clone repo
+* Copy `.env.example` to `.env`
+* Update `.env` settings as appropriate for your environment
+* `composer install`
 * Ensure an instance of Neo4j 3.x is running (Bolt protocol)
 * Run `php -f scripts/load-data.php`
 * Start the web server: `./server.sh`
 * Visit [http://localhost:8888/browser/browser.html](http://localhost:8888/browser/browser.html)
 * Explore the API using the HAL browser
 
-### Installing the GraphAware UUID Plugin
+#### Installing the GraphAware UUID Plugin
+
+This step is NOT necessary if you're using the Docker instructions from above.
 
 * Download the [GraphAware UUID](http://products.graphaware.com/download/uuid/latest) component
 * Download the [GraphAware Framework](http://products.graphaware.com/download/framework-server-community/latest)

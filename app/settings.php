@@ -9,7 +9,7 @@ return [
         'logger' => [
             'app' => [
                 'name' => 'app',
-                'path' => APPLICATION_PATH . '/log/app.log',
+                'path' => 'php://stderr',
             ],
         ],
         'neo4j' => [

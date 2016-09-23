@@ -1,0 +1,39 @@
+version: '2'
+
+services:
+  nginx:
+    build:
+      context: ./
+      dockerfile: ./resources/nginx/nginx.dockerfile
+    volumes:
+      - ./:/var/www/html
+      - ./resources/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    links:
+      - phpserver
+    ports:
+      - "80:80"
+      - "443:443"
+
+  phpserver:
+    build:
+      context: ./
+      dockerfile: ./resources/php/phpserver.dockerfile
+    volumes:
+      - ./:/var/www/html
+
+  graphdb:
+    image: neo4j
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      NEO4J_AUTH: neo4j/password
+      NEO4J_dbms_memory_pagecache_size: 1G
+      TERM: xterm
+    ulimits:
+      nofile:
+        soft: 40000
+        hard: 40000
+    volumes:
+      - ./resources/neo4j/conf:/conf
+      - ./resources/neo4j/plugins:/plugins
