@@ -6,3 +6,4 @@ neo4j-community-*/
 *.zip
 .idea/
 !/public/browser/vendor/
+data/*.json
