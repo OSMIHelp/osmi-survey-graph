@@ -1,3 +1,4 @@
+#!/usr/bin/env php
 <?php
 
 require_once realpath('./scripts/bootstrap.php');
