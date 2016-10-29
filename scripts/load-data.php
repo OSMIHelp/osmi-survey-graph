@@ -35,6 +35,7 @@ try {
 
     foreach ($constraints as $constraint) {
         foreach ($constraint as $label => $property) {
+            echo "Adding constraint {$label}.{$property}." . PHP_EOL;
             $stack->push(sprintf(
                 'CREATE CONSTRAINT ON (n:%s) ASSERT n.%s IS UNIQUE',
                 $label,
@@ -51,11 +52,13 @@ try {
 
     foreach ($indexes as $index) {
         foreach ($index as $label => $property) {
+            echo "Adding index {$label}.{$property}." . PHP_EOL;
             $stack->push(sprintf('CREATE INDEX ON :%s(%s)', $label, $property));
         }
     }
 
     // Schema updates must be run first
+    echo 'Running stack' . PHP_EOL;
     $neo4j->runStack($stack);
 
     echo 'Created constraints and indexes.' . PHP_EOL;
@@ -65,6 +68,7 @@ try {
     exit(1);
 }
 
+/** @var \OSMI\Survey\Graph\Repository\JsonImport $importRepo */
 $importRepo = $container['jsonImportRepository'];
 
 try {
