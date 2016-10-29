@@ -4,8 +4,8 @@
 
 * Copy `.env.example`
 * Update settings as appropriate for your environment
-* Ensure an instance of Neo4j 3.x is running (Bolt protocol)
-* Run `php -f scripts/load-data.php`
+* Ensure an instance of Neo4j 3.x is running (Bolt protocol) with the GraphAware UUID plugin (see below)
+* Run `./scipts/load-data.php`
 * Start the web server: `./server.sh`
 * Visit [http://localhost:8888/browser/browser.html](http://localhost:8888/browser/browser.html)
 * Explore the API using the HAL browser
@@ -19,13 +19,14 @@
 
 ```
 com.graphaware.runtime.enabled=true
-
-#UIDM becomes the module ID:
 com.graphaware.module.UIDM.1=com.graphaware.module.uuid.UuidBootstrapper
-
-#optional, default is uuid:
 com.graphaware.module.UIDM.uuidProperty=uuid
 ```
+
+### Updating the dataset
+
+* Make sure you have a Typeform API Key, and add it to your .env file as `TYPEFORM_API_KEY=XXXX`
+* Run `./srcipts/clear-and-reload-data.sh`
 
 ## API Endpoints
 
