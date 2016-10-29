@@ -22,7 +22,8 @@
         "monolog/monolog": "^1.20",
         "graphaware/neo4j-php-client": "^4.5",
         "pimple/pimple": "^3.0",
-        "myclabs/php-enum": "^1.4"
+        "myclabs/php-enum": "^1.4",
+        "league/csv": "^8.1"
     },
     "require-dev": {
         "jeremykendall/debug-die": "^0.0.1"
