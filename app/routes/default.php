@@ -23,6 +23,10 @@ $app->get('/', function (Request $request, Response $response, array $args) {
                 'href' => '/disorders',
                 'title' => 'Disorders identified in survey',
             ],
+            'countries' => [
+                'href' => '/countries',
+                'title' => 'Countries identified in survey',
+            ],
         ],
     ];
 

@@ -58,6 +58,22 @@ use JMS\Serializer\Annotation as Serializer;
  *          }
  *      )
  *  )
+ *
+ * @Hateoas\Relation("country_working", href = @Hateoas\Route(
+ *          "respondent_get_country_working",
+ *          parameters = {
+ *              "uuid" = "expr(object.getUuid())"
+ *          }
+ *      )
+ *  )
+ *
+ * @Hateoas\Relation("country_living", href = @Hateoas\Route(
+ *          "respondent_get_country_living",
+ *          parameters = {
+ *              "uuid" = "expr(object.getUuid())"
+ *          }
+ *      )
+ *  )
  */
 class Person extends AbstractModel
 {

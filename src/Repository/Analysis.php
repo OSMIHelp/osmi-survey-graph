@@ -10,6 +10,7 @@ namespace OSMI\Survey\Graph\Repository;
 use GraphAware\Bolt\Result\Result;
 use OSMI\Survey\Graph\Enum\Diagnosis;
 use OSMI\Survey\Graph\Model\Answer;
+use OSMI\Survey\Graph\Model\Country;
 use OSMI\Survey\Graph\Model\Disorder;
 use OSMI\Survey\Graph\Model\Person;
 use OSMI\Survey\Graph\Model\Question;
@@ -525,5 +526,169 @@ CQL;
         }
 
         return $resources;
+    }
+
+
+    private function buildCountries(Result $result)
+    {
+        $resources = [];
+
+        foreach ($result->getRecords() as $record) {
+            $data = $record->get('c')->values();
+            $question = new Country($data);
+
+            $resources[] = $question;
+        }
+
+        return $resources;
+    }
+
+    private function buildSingleCountry($result) {
+        $resources = $this->buildCountries($result);
+
+        if (empty($resources)) {
+            return;
+        }
+
+        return $resources[0];
+    }
+
+
+    /**
+     * Find all Countries.
+     *
+     * @return Country[]
+     */
+    public function findAllCountries($skip = 0, $limit = 100)
+    {
+        $cql = <<<CQL
+MATCH (c:Country)<-[]-(p:Person)
+RETURN DISTINCT c
+ORDER BY c.name
+SKIP { skip }
+LIMIT { limit }
+CQL;
+
+        $params = [
+            'skip' => $skip,
+            'limit' => $limit,
+        ];
+
+        $result = $this->client->run($cql, $params);
+
+        return $this->buildCountries($result);
+    }
+
+    /**
+     * Find a single country by UUID
+     *
+     * @param string $uuid
+     * @return mixed|void
+     */
+    public function findCountry($uuid) {
+        $cql = <<<CQL
+MATCH (c:Country { uuid: { uuid }})<-[]-(p:Person)
+RETURN c, COLLECT(p) AS persons
+CQL;
+
+        $params = [
+            'uuid' => $uuid,
+        ];
+
+        $result = $this->client->run($cql, $params);
+
+        return $this->buildSingleCountry($result);
+    }
+
+    /**
+     * @param string $uuid
+     * @param int $skip
+     * @param int $limit
+     * @return Person[]
+     */
+    public function findRespondentsLivingInCountry($uuid, $skip = 0, $limit = 100) {
+        $cql = <<<CQL
+MATCH (c:Country { uuid: { uuid }})<-[:LIVES_IN_COUNTRY]-(p)
+RETURN p
+ORDER BY p.token
+SKIP { skip }
+LIMIT { limit }
+CQL;
+
+        $params = [
+            'uuid' => $uuid,
+            'skip' => $skip,
+            'limit' => $limit,
+        ];
+
+        $result = $this->client->run($cql, $params);
+        $resources = [];
+
+        foreach ($result->records() as $record) {
+            $data = $record->get('p')->values();
+            $resources[] = new Person($data);
+        }
+
+        return $resources;
+    }
+
+    /**
+     * @param string $uuid
+     * @param int $skip
+     * @param int $limit
+     * @return Person[]
+     */
+    public function findRespondentsWorkingInCountry($uuid, $skip = 0, $limit = 100) {
+        $cql = <<<CQL
+MATCH (c:Country { uuid: { uuid }})<-[:WORKS_IN]-(p)
+RETURN p
+ORDER BY p.token
+SKIP { skip }
+LIMIT { limit }
+CQL;
+
+        $params = [
+            'uuid' => $uuid,
+            'skip' => $skip,
+            'limit' => $limit,
+        ];
+
+        $result = $this->client->run($cql, $params);
+        $resources = [];
+
+        foreach ($result->records() as $record) {
+            $data = $record->get('p')->values();
+            $resources[] = new Person($data);
+        }
+
+        return $resources;
+    }
+
+    public function findWorkingCountryByRespondent($uuid) {
+        $cql = <<<CQL
+MATCH (p:Person { uuid: { uuid }})-[:WORKS_IN]->(c:Country)
+RETURN c
+CQL;
+        $params = [
+            'uuid' => $uuid,
+        ];
+
+        $result = $this->client->run($cql, $params);
+
+        return $this->buildSingleCountry($result);
+    }
+
+    public function findLivingCountryByRespondent($uuid) {
+        $cql = <<<CQL
+MATCH (p:Person { uuid: { uuid }})-[:LIVES_IN_COUNTRY]->(c:Country)
+RETURN c
+CQL;
+        $params = [
+            'uuid' => $uuid,
+        ];
+
+        $result = $this->client->run($cql, $params);
+
+        return $this->buildSingleCountry($result);
     }
 }

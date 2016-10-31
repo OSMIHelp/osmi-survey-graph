@@ -192,6 +192,25 @@ $app->group('/respondents', function () {
         return $this->get('halResponse')
             ->withJson($response, $paginated);
     })->setName('respondent_get_disorders');
+
+    $this->get('/{uuid}/country-working', function (Request $request, Response $response, array $args) {
+        /** @var \OSMI\Survey\Graph\Repository\Analysis $repo */
+        $repo = $this->get('analysisRepository');
+        $country = $repo->findWorkingCountryByRespondent($args['uuid']);
+
+        return $this->get('halResponse')
+            ->withJson($response, $country);
+    })->setName('respondent_get_country_working');
+
+    $this->get('/{uuid}/country-living', function (Request $request, Response $response, array $args) {
+        /** @var \OSMI\Survey\Graph\Repository\Analysis $repo */
+        $repo = $this->get('analysisRepository');
+        $country = $repo->findLivingCountryByRespondent($args['uuid']);
+
+        return $this->get('halResponse')
+            ->withJson($response, $country);
+    })->setName('respondent_get_country_living');
+
 });
 
 $app->group('/disorders', function () {
@@ -264,4 +283,98 @@ $app->group('/disorders', function () {
         return $this->get('halResponse')
             ->withJson($response, $paginated);
     })->setName('disorder_get_respondents');
+});
+
+$app->group('/countries', function () {
+    $this->get('', function (Request $request, Response $response, array $args) {
+        $pageSize = 10;
+        $pageNumber = (int) $request->getQueryParam('page', 1);
+        $skip = $pageSize * ($pageNumber - 1);
+        $limit = (int) $request->getQueryParam('limit', $pageSize);
+
+        /** @var \OSMI\Survey\Graph\Repository\Analysis $repo */
+        $repo = $this->get('analysisRepository');
+        $resources = $repo->findAllCountries($skip, $limit);
+        $totalResources = $repo->countResources('Country');
+
+        $paginated = Paginator::createPaginatedRepresentation(
+            $pageNumber,
+            $limit,
+            $resources,
+            $totalResources,
+            'countries_get_all',
+            $parameters = [],
+            'countries'
+        );
+
+        return $this->get('halResponse')
+            ->withJson($response, $paginated);
+    })->setName('countries_get_all');
+
+
+    $this->get('/{uuid}', function (Request $request, Response $response, array $args) {
+        /** @var \OSMI\Survey\Graph\Repository\Analysis $repo */
+        $repo = $this->get('analysisRepository');
+        $country = $repo->findCountry($args['uuid']);
+
+        return $this->get('halResponse')
+            ->withJson($response, $country);
+    })->setName('countries_get_one');
+
+    $this->get('/{uuid}/living', function(Request $request, Response $response, array $args) {
+        $pageSize = 10;
+        $pageNumber = (int) $request->getQueryParam('page', 1);
+        $skip = $pageSize * ($pageNumber - 1);
+        $limit = (int) $request->getQueryParam('limit', $pageSize);
+
+        /** @var \OSMI\Survey\Graph\Repository\Analysis $repo */
+        $repo = $this->get('analysisRepository');
+        $resources = $repo->findRespondentsLivingInCountry($args['uuid'], $skip, $limit);
+        $totalResources = count($resources);
+
+        $paginated = Paginator::createPaginatedRepresentation(
+            $pageNumber,
+            $limit,
+            $resources,
+            $totalResources,
+            'countries_get_persons_living',
+            $parameters = [
+                'uuid' => $args['uuid'],
+            ],
+            'respondents'
+        );
+
+        return $this->get('halResponse')
+            ->withJson($response, $paginated);
+
+    })->setName('countries_get_persons_living');
+
+    $this->get('/{uuid}/working', function(Request $request, Response $response, array $args) {
+        $pageSize = 10;
+        $pageNumber = (int) $request->getQueryParam('page', 1);
+        $skip = $pageSize * ($pageNumber - 1);
+        $limit = (int) $request->getQueryParam('limit', $pageSize);
+
+        /** @var \OSMI\Survey\Graph\Repository\Analysis $repo */
+        $repo = $this->get('analysisRepository');
+        $resources = $repo->findRespondentsWorkingInCountry($args['uuid'], $skip, $limit);
+        $totalResources = count($resources);
+
+        $paginated = Paginator::createPaginatedRepresentation(
+            $pageNumber,
+            $limit,
+            $resources,
+            $totalResources,
+            'countries_get_persons_working',
+            $parameters = [
+                'uuid' => $args['uuid'],
+            ],
+            'respondents'
+        );
+
+        return $this->get('halResponse')
+            ->withJson($response, $paginated);
+
+    })->setName('countries_get_persons_working');
+
 });
