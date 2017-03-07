@@ -27,6 +27,7 @@ function getSurveyData($limit = 100)
     $client = new GuzzleHttp\Client(['base_uri' => 'https://api.typeform.com/v1/']);
 
     while (!$finished) {
+        sleep(2); // avoid hammering the API
         $response = $client->get('form/Ao6BTw', [
             'query' => [
                 'key' => $apiKey,
